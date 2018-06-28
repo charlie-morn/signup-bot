@@ -139,7 +139,7 @@ function dropIndex(arr, index, user, message, author){
         return "User " + user + " removed successfully.";
     }else{
         message.react('🛑');
-        return "You are not authorized to remove " + user + "from the raid.";
+        return "You are not authorized to remove " + user + " from the raid.";
     }
 }
 async function dropFromRaid(raid_id, sRaid, user, message){
