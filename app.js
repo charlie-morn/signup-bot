@@ -39,9 +39,9 @@ function getMessage(raid_id, nRaid){
     return "**" + nRaid.title + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
             + "\n" + nRaid.description
-            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `+join " + raid_id + " Name Class (Reserve)`" + " \n"
-            + "For example: `+join " + raid_id + " signup-bot Hunter" + "` would join me to the main roster, and `+join " + raid_id 
-            + " signup-bot Fill reserve` would have me be a reserve fill.\n"
+            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `+join " + raid_id + "|Name|Class(|Reserve)`" + " \n"
+            + "For example: `+join " + raid_id + "|signup-bot|Hunter" + "` would join me to the main roster, and `+join " + raid_id 
+            + "|signup-bot|Fill|reserve` would have me be a reserve fill.\n"
             + "```" + getFormattedList(nRaid) + "```";
 }
 
