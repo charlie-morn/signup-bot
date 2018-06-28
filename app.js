@@ -279,24 +279,24 @@ client.on("message", async message => {
         const args = message.content.slice(config.prefix.length).split(/ +/g);
         const command = args.shift().toLowerCase();
 
-        if(command == "join"){
+        if(command == "join" || command == "add"){
             const args2 = args.join(" ").split('|');
             const raid_id = args2.shift();
             if(typeof raid_id == 'undefined'){
                 message.reply("Sorry, I can't add you unless you tell me which raid you want. Please check the syntax for this function and resubmit.")
                 return;
             }
+            var cl = args2.shift();
+            if(typeof cl == 'undefined'){
+                cl = 'Fill'
+            }
+            const res = args2.shift();
             var user = args2.shift();
             if(typeof user == 'undefined'){
                 user = message.author.username;
                 //message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
                 //return;
             }
-            var cl = args2.shift();
-            if(typeof cl == 'undefined'){
-                cl = 'Fill'
-            }
-            const res = args2.shift();
             
             var sRaid = await getRaid(raid_id);
             if(typeof sRaid == 'undefined'){
@@ -308,7 +308,7 @@ client.on("message", async message => {
             updateRaidMessage(raid_id, sRaid, raidMsg);
             message.reply(addResponse);
         }
-        if(command == "drop" || command == "kick" || command =="getfucked"){
+        if(command == "drop" || command == "kick" || command =="getfucked" || command == "leave"){
             const args2 = args.join(" ").split('|');
             const raid_id = args2.shift();
             if(typeof raid_id == 'undefined'){
