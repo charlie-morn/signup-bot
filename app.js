@@ -41,7 +41,7 @@ function getMessage(raid_id, nRaid){
             + "\n" + nRaid.description
             + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `+join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
             + "For example: `+join " + raid_id + "|Hunter" + "` would join me to the main roster, and `+join " + raid_id 
-            + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
+            + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "|Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
             + "```" + getFormattedList(nRaid) + "```";
 }
 
