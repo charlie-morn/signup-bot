@@ -136,7 +136,7 @@ client.on("message", async message => {
     if(command === "raid") {
         //The syntax for creating a new raid is:
         //+raid Raid Name, 5/21 8:00 PST, (Description, Class)
-        const args2 = args.join(" ").split(',');
+        const args2 = args.join(" ").split('|');
 
         const raids = args2.shift();
         if(typeof raids == 'undefined'){
