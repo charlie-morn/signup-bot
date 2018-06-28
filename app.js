@@ -40,8 +40,8 @@ function getMessage(raid_id, nRaid){
             + "\n**Posted by:** " + nRaid.author
             + "\n" + nRaid.description
             + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `+join " + raid_id + " Name Class (Reserve)`" + " \n"
-            + "For example: `+join " + raid_id + " cliffhanger407 Hunter" + "` would join me to the main roster, and `+join " + raid_id 
-            + " cliffhanger407 Fill reserve` would have me be a reserve fill (if you want to be reserve fill, you must specify a class before saying reserve).\n"
+            + "For example: `+join " + raid_id + " signup-bot Hunter" + "` would join me to the main roster, and `+join " + raid_id 
+            + " signup-bot Fill reserve` would have me be a reserve fill.\n"
             + "```" + getFormattedList(nRaid) + "```";
 }
 
@@ -62,6 +62,7 @@ async function getId(){
 }
 
 async function writeRaid(raid_id, nRaid){
+    //Writes the raid to persistent storage.
     await storage.init({
         dir: 'raid_store',
         stringify: JSON.stringify,
@@ -78,6 +79,7 @@ async function writeRaid(raid_id, nRaid){
 }
 
 async function getRaid(raid_id){
+    //Reads the raid from persistent storage.
     await storage.init({
         dir: 'raid_store',
         stringify: JSON.stringify,
@@ -98,23 +100,63 @@ async function updateRaidMessage(raid_id, sRaid, message){
     //client.TextChannel.fetchMessage(sRaid.message_id)
     //    .then(message => message.edit(sayMessage));
 }
-
+function findIndexOfUser(userList, user){
+    for(i=0;i<userList.length;i++){
+        if(userList[i].name == user){
+            return i;
+        }
+    }
+    return -1;
+}
 async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    if(findIndexOfUser(sRaid.main, user) != -1 || findIndexOfUser(sRaid.reserves, user) != -1){
+        return message.reply("You are already in this raid, please leave and rejoin if you want to swap roles.");
+    }
     if(typeof res != 'undefined'){
-        sRaid.reserves.push({name: user, cl: m_cl});
+        sRaid.reserves.push({name: user, cl: m_cl, adding_user: message.author.username});
         message.react('✅');
         retStr =  "I've added you to the reserve list.";
     }
     else{
         if(sRaid.main.length < 6){
-            sRaid.main.push({name: user, cl: m_cl});
+            sRaid.main.push({name: user, cl: m_cl, adding_user: message.author.username});
             message.react('✅');
             retStr = "You're in!";
         }else{
-            sRaid.reserves.push({name: user, cl:m_cl});
+            sRaid.reserves.push({name: user, cl:m_cl, adding_user: message.author.username});
             message.react('❕');
             retStr = "List was full, but you have been added to reserves.";
+        }
+    }
+    writeRaid(raid_id, sRaid);
+    return retStr;
+}
+function dropIndex(arr, index, user, message, author){
+    if(message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author){
+        arr.splice(index,1);
+        message.react('✅');
+        return "User " + user + " removed successfully.";
+    }else{
+        message.react('🛑');
+        return "You are not authorized to remove " + user + "from the raid.";
+    }
+}
+async function dropFromRaid(raid_id, sRaid, user, message){
+    var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    if(typeof user == 'undefined'){
+        user = message.author.username;
+    }
+    var index = findIndexOfUser(sRaid.main, user);
+    if(index >= 0){
+        retStr = dropIndex(sRaid.main, index, user, message, sRaid.author);
+    }else{
+        index = findIndexOfUser(sRaid.reserves, user);
+        if(index >= 0){
+            retStr = dropIndex(sRaid.reserves, index, user, message, sRaid.author);
+        }
+        else{
+            retStr = "That user is not in this raid. Check for spelling errors and try again.";
         }
     }
     writeRaid(raid_id, sRaid);
@@ -166,26 +208,26 @@ client.on("message", async message => {
         //+raid Raid Name, 5/21 8:00 PST, (Description, Class)
         const args2 = args.join(" ").split('|');
 
-        const raids = args2.shift();
+        const raids = args2.shift().trim();
         if(typeof raids == 'undefined'){
             message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
             message.delete().catch(O_o=>{});
             return;
         }
             //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
-        const time = args2.shift();
+        const time = args2.shift().trim();
         if(typeof time == 'undefined'){
             message.author.send("Sorry, I couldn't create this raid because you haven't specified a time or description. Please re-read the pinned syntax for creating raids and resbumit.")
             message.delete().catch(O_o=>{});
             return;
         }
-        const desc = args2.shift();
+        const desc = args2.shift().trim();
         if(typeof desc == 'undefined'){
             message.author.send("Sorry, I couldn't create this raid because you haven't specified a description. Please re-read the pinned syntax for creating raids and resbumit.")
             message.delete().catch(O_o=>{});
             return;
         }
-        var m_cl = args2.shift();
+        var m_cl = args2.shift().trim();
         if(typeof m_cl == 'undefined'){
             m_cl = 'Fill';
         }
@@ -225,19 +267,6 @@ client.on("message", async message => {
         message.channel.bulkDelete(fetched)
           .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
       }
-    /*if(command === "join") {
-        const mid = args.shift();
-        const cl = args.shift();
-        const prior = await message.channel.fetchMessage(mid)
-            .catch(error => {
-                console.log(error.message)
-                if(error.message === 'DiscordAPIError: Unknown MessageHunter'){
-                    message.author.send("Sorry,  I couldn't join you to that raid because : the raid ID is incorrect" + error)}
-                 else {
-                    message.author.send("Sorry,  I couldn't join you to that raid because : " + error + ". You should not be receiving this error. Please forward to @cliffhanger407#4483")
-                }})
-        prior.edit(prior.content + cl)
-    }*/
     return;
     }
     if(message.channel.name === config.signup_here){
@@ -251,21 +280,22 @@ client.on("message", async message => {
         const command = args.shift().toLowerCase();
 
         if(command == "join"){
-            const raid_id = args.shift();
+            const args2 = args.join(" ").split('|');
+            const raid_id = args2.shift().trim();
             if(typeof raid_id == 'undefined'){
                 message.reply("Sorry, I can't add you unless you tell me which raid you want. Please check the syntax for this function and resubmit.")
                 return;
             }
-            const user = args.shift();
+            const user = args2.shift().trim();
             if(typeof user == 'undefined'){
                 message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
                 return;
             }
-            var cl = args.shift();
+            var cl = args2.shift().trim();
             if(typeof cl == 'undefined'){
                 cl = 'Fill'
             }
-            const res = args.shift();
+            const res = args2.shift().trim();
             
             var sRaid = await getRaid(raid_id);
             if(typeof sRaid == 'undefined'){
@@ -276,6 +306,26 @@ client.on("message", async message => {
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(raid_id, sRaid, raidMsg);
             message.reply(addResponse);
+        }
+        if(command == "drop" || command == "kick"){
+            const args2 = args.join(" ").split('|');
+            const raid_id = args2.shift().trim();
+            if(typeof raid_id == 'undefined'){
+                return message.reply("Sorry, I can't drop you unless you tell me which raid you want out of. Please check the syntax for this function and resubmit.");
+            }
+            var user = args2.shift().trim();
+            var sRaid = await getRaid(raid_id);
+            if(typeof sRaid == 'undefined'){
+                return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            };
+            if(user == sRaid.author){
+                return message.reply("You can't use this command to leave your own raid. You must delete it separately. (This functionality not yet implemented).")
+            } else {
+                var dropResponse = await dropFromRaid(raid_id, sRaid, user, message);
+                var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+                updateRaidMessage(raid_id, sRaid, raidMsg);
+                message.reply(dropResponse);
+            }
         }
         if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.

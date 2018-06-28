@@ -1,11 +1,14 @@
 # signup-bot
 Signup bot is used to manage our clan's raid lists and is currently under very preliminary development. 
 
-Currently the only command that can be issued with this bot is:
+Currently the only commands that can be issued with this bot are:
 ```
 +raid $Title | $Date | $Description (| $Class)
++join $Raid_id $User ($Class $Reserve)
 ```
-What this means is:
+Arguments in parentheses are optional and do not need to be included.
+
+## To Create a Raid:
 1) Type +raid
 2) Type your raid's title. Usually this will be something like "Leviathan" or "Lev>EoW>SOS" or... something descriptive. Now type the | character. It's above the enter key.
 3) Type your raid's time. This can be formatted however you want, we're just storing this for display purposes. Now type | again.
@@ -22,3 +25,14 @@ or
 ```
 
 The bot takes care of the rest (formatting, etc.). This is not ready for release yet, as we are still working on developing functionality to join, etc. Wanted to get deployed into git quickly.
+
+## To join an already existing raid:
+As above. You could type:
+```
++join 2 cliffhanger407 Hunter
+```
+or
+```
++join 2 cliffhanger407 Fill reserve
+```
+or
