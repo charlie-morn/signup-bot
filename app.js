@@ -286,10 +286,11 @@ client.on("message", async message => {
                 message.reply("Sorry, I can't add you unless you tell me which raid you want. Please check the syntax for this function and resubmit.")
                 return;
             }
-            const user = args2.shift();
+            var user = args2.shift();
             if(typeof user == 'undefined'){
-                message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
-                return;
+                user = message.author.username;
+                //message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
+                //return;
             }
             var cl = args2.shift();
             if(typeof cl == 'undefined'){
