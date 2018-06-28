@@ -14,7 +14,7 @@ What this means is:
 
 So for example, you would type:
 ```
-+raid Leviathan|6/29 5PM PST|Let's set up a sherpa run, join in @SpacePup!
++raid Leviathan|6/29 5PM PST|Let's set up a sherpa run, join in @cliffhanger407!
 ```
 or
 ```

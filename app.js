@@ -28,21 +28,20 @@ function getFormattedList(my_Raid){
         if(typeof my_Raid.reserves[i]== 'undefined'){
             ret += String(i+1) + '. OPEN \n';
         }else{
-            ret += String(i+1) + '. ' + my_Raid.main[i].name + ' - ' + my_Raid.main[i].cl + '\n';
+            ret += String(i+1) + '. ' + my_Raid.reserves[i].name + ' - ' + my_Raid.reserves[i].cl + '\n';
         }
     }
     ret = ret.replace(/\n$/,"");
-    console.log(ret)
     return ret;
 }
 
-function getMessage(nRaid, raid_id){
+function getMessage(raid_id, nRaid){
     return "**" + nRaid.title + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
             + "\n" + nRaid.description
-            + "\n\nTo join this raid, reply in this channel with the command `+join " + raid_id + " Name, Class, (Reserve)`" + " \n"
-            + "For example: `+join " + raid_id + " cliffhanger407, Hunter" + "` would join me to the main roster, and `+join " + raid_id 
-            + " cliffhanger407, Fill, reserve` would have me be a reserve fill.\n"
+            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `+join " + raid_id + " Name Class (Reserve)`" + " \n"
+            + "For example: `+join " + raid_id + " cliffhanger407 Hunter" + "` would join me to the main roster, and `+join " + raid_id 
+            + " cliffhanger407 Fill reserve` would have me be a reserve fill (if you want to be reserve fill, you must specify a class before saying reserve).\n"
             + "```" + getFormattedList(nRaid) + "```";
 }
 
@@ -93,6 +92,34 @@ async function getRaid(raid_id){
     });
     return await storage.getItem(raid_id)
 }
+async function updateRaidMessage(raid_id, sRaid, message){
+    const sayMessage = getMessage(raid_id, sRaid); 
+    message.edit(sayMessage);
+    //client.TextChannel.fetchMessage(sRaid.message_id)
+    //    .then(message => message.edit(sayMessage));
+}
+
+async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
+    var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    if(typeof res != 'undefined'){
+        sRaid.reserves.push({name: user, cl: m_cl});
+        //message.react('✔️');
+        retStr =  "I've added you to the reserve list.";
+    }
+    else{
+        if(sRaid.main.length < 6){
+            sRaid.main.push({name: user, cl: m_cl});
+            //message.react('✔️');
+            retStr = "You're in!";
+        }else{
+            sRaid.reserves.push({name: user, cl:m_cl});
+            //message.react('❕');
+            retStr = "List was full, but you have been added to reserves.";
+        }
+    }
+    writeRaid(raid_id, sRaid);
+    return retStr;
+}
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
@@ -124,6 +151,7 @@ client.on("message", async message => {
   
   // Also good practice to ignore any message that does not start with our prefix, 
   // which is set in the configuration file.
+  
   if(message.channel.name === config.signup_list){
     if(message.content.indexOf(config.prefix) !== 0){
           //Commenting these to allow for other messages to be posted.
@@ -173,15 +201,30 @@ client.on("message", async message => {
             reserves: [],
             time: time,
             author: message.author.username,
-            message_id: msg_id
+            message_id: msg_id,
+            channel_id: m.channel.id
           };
         //message.edit(sayMessage);
         message.delete().catch(O_o=>{});
-        const sayMessage = getMessage(nRaid, raid_id); 
+        const sayMessage = getMessage(raid_id, nRaid); 
         writeRaid(raid_id, nRaid);
         m.edit(sayMessage);
-        var sRaid = await getRaid(raid_id);
     }
+    if(command === "purge") {
+        // This command removes all messages from all users in the channel, up to 100.
+        
+        // get the delete count, as an actual number.
+        const deleteCount = parseInt(args[0], 10);
+        
+        // Ooooh nice, combined conditions. <3
+        if(!deleteCount || deleteCount < 2 || deleteCount > 100)
+          return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
+        
+        // So we get our messages, and delete them. Simple enough, right?
+        const fetched = await message.channel.fetchMessages({limit: deleteCount});
+        message.channel.bulkDelete(fetched)
+          .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
+      }
     /*if(command === "join") {
         const mid = args.shift();
         const cl = args.shift();
@@ -196,6 +239,59 @@ client.on("message", async message => {
         prior.edit(prior.content + cl)
     }*/
     return;
+    }
+    if(message.channel.name === config.signup_here){
+        if(message.content.indexOf(config.prefix) !== 0){
+            //Commenting these to allow for other messages to be posted. This ignores input that does not begin with our prefix.
+            //message.author.send("You have posted an invalid response. Please try again.")
+            //message.delete().catch(O_o=>{});
+            return;
+        }
+        const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+        const command = args.shift().toLowerCase();
+
+        if(command == "join"){
+            const raid_id = args.shift();
+            if(typeof raid_id == 'undefined'){
+                message.reply("Sorry, I can't add you unless you tell me which raid you want. Please check the syntax for this function and resubmit.")
+                return;
+            }
+            const user = args.shift();
+            if(typeof user == 'undefined'){
+                message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
+                return;
+            }
+            var cl = args.shift();
+            if(typeof cl == 'undefined'){
+                cl = 'Fill'
+            }
+            const res = args.shift();
+            
+            var sRaid = await getRaid(raid_id);
+            if(typeof sRaid == 'undefined'){
+                message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+                return;
+            };
+            var addResponse = await addToRaid(raid_id, sRaid, user, cl, res, message);
+            var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+            updateRaidMessage(raid_id, sRaid, raidMsg);
+            message.reply(addResponse);
+        }
+        if(command === "purge") {
+            // This command removes all messages from all users in the channel, up to 100.
+            
+            // get the delete count, as an actual number.
+            const deleteCount = parseInt(args[0], 10);
+            
+            // Ooooh nice, combined conditions. <3
+            if(!deleteCount || deleteCount < 2 || deleteCount > 100)
+              return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
+            
+            // So we get our messages, and delete them. Simple enough, right?
+            const fetched = await message.channel.fetchMessages({limit: deleteCount});
+            message.channel.bulkDelete(fetched)
+              .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
+          }
     }
 });
 
