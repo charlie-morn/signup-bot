@@ -201,33 +201,33 @@ client.on("message", async message => {
           //message.delete().catch(O_o=>{});
           return;
       }
-    const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+    const args = message.content.slice(config.prefix.length).split(/ +/g);
     const command = args.shift().toLowerCase();
     if(command === "raid") {
         //The syntax for creating a new raid is:
         //+raid Raid Name, 5/21 8:00 PST, (Description, Class)
         const args2 = args.join(" ").split('|');
 
-        const raids = args2.shift().trim();
+        const raids = args2.shift();
         if(typeof raids == 'undefined'){
             message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
             message.delete().catch(O_o=>{});
             return;
         }
             //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
-        const time = args2.shift().trim();
+        const time = args2.shift();
         if(typeof time == 'undefined'){
             message.author.send("Sorry, I couldn't create this raid because you haven't specified a time or description. Please re-read the pinned syntax for creating raids and resbumit.")
             message.delete().catch(O_o=>{});
             return;
         }
-        const desc = args2.shift().trim();
+        const desc = args2.shift();
         if(typeof desc == 'undefined'){
             message.author.send("Sorry, I couldn't create this raid because you haven't specified a description. Please re-read the pinned syntax for creating raids and resbumit.")
             message.delete().catch(O_o=>{});
             return;
         }
-        var m_cl = args2.shift().trim();
+        var m_cl = args2.shift();
         if(typeof m_cl == 'undefined'){
             m_cl = 'Fill';
         }
@@ -276,26 +276,26 @@ client.on("message", async message => {
             //message.delete().catch(O_o=>{});
             return;
         }
-        const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+        const args = message.content.slice(config.prefix.length).split(/ +/g);
         const command = args.shift().toLowerCase();
 
         if(command == "join"){
             const args2 = args.join(" ").split('|');
-            const raid_id = args2.shift().trim();
+            const raid_id = args2.shift();
             if(typeof raid_id == 'undefined'){
                 message.reply("Sorry, I can't add you unless you tell me which raid you want. Please check the syntax for this function and resubmit.")
                 return;
             }
-            const user = args2.shift().trim();
+            const user = args2.shift();
             if(typeof user == 'undefined'){
                 message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
                 return;
             }
-            var cl = args2.shift().trim();
+            var cl = args2.shift();
             if(typeof cl == 'undefined'){
                 cl = 'Fill'
             }
-            const res = args2.shift().trim();
+            const res = args2.shift();
             
             var sRaid = await getRaid(raid_id);
             if(typeof sRaid == 'undefined'){
@@ -309,11 +309,11 @@ client.on("message", async message => {
         }
         if(command == "drop" || command == "kick"){
             const args2 = args.join(" ").split('|');
-            const raid_id = args2.shift().trim();
+            const raid_id = args2.shift();
             if(typeof raid_id == 'undefined'){
                 return message.reply("Sorry, I can't drop you unless you tell me which raid you want out of. Please check the syntax for this function and resubmit.");
             }
-            var user = args2.shift().trim();
+            var user = args2.shift();
             var sRaid = await getRaid(raid_id);
             if(typeof sRaid == 'undefined'){
                 return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
