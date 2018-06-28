@@ -307,7 +307,7 @@ client.on("message", async message => {
             updateRaidMessage(raid_id, sRaid, raidMsg);
             message.reply(addResponse);
         }
-        if(command == "drop" || command == "kick"){
+        if(command == "drop" || command == "kick" || command =="getfucked"){
             const args2 = args.join(" ").split('|');
             const raid_id = args2.shift();
             if(typeof raid_id == 'undefined'){
