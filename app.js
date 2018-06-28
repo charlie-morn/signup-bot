@@ -103,17 +103,17 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
     if(typeof res != 'undefined'){
         sRaid.reserves.push({name: user, cl: m_cl});
-        //message.react('✔️');
+        message.react('✅');
         retStr =  "I've added you to the reserve list.";
     }
     else{
         if(sRaid.main.length < 6){
             sRaid.main.push({name: user, cl: m_cl});
-            //message.react('✔️');
+            message.react('✅');
             retStr = "You're in!";
         }else{
             sRaid.reserves.push({name: user, cl:m_cl});
-            //message.react('❕');
+            message.react('❕');
             retStr = "List was full, but you have been added to reserves.";
         }
     }
