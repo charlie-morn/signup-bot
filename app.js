@@ -149,7 +149,27 @@ async function messageReserves(raid_id, sRaid, message){
 function ownsUser(arr, index, message, author){
     return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
 }
-
+function promoteRaider(raid_id, sRaid, user, message){
+    const index = findIndexOfUser(sRaid.reserves, user)
+    if(sRaid.main.length > 5){
+        message.react('🛑');
+        return "That raid is full, cannot promote.";
+    }else if(index > -1){
+        if(ownsUser(sRaid.reserves, index, message, sRaid.author)){
+            const user_dict = sRaid.reserves[index];
+            sRaid.main.push(user_dict);
+            sRaid.reserves.splice(index, 1);
+            message.react('✅');
+            return user + " has been promoted to the main roster."
+        }else{
+            message.react('🛑');
+            return "You are not authorized to modify " + user + ".";
+        }
+    }else{
+        return "That user is not in the reserves list for this raid.";
+    }
+    
+}
 function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
     if(ownsUser(arr, index, message, author)){
         message.react('✅');
@@ -381,6 +401,28 @@ client.on("message", async message => {
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(raid_id, sRaid, raidMsg);
             message.reply(changeResponse);
+        }
+        if(command == "promote"){
+            const args2 = args.join(" ").split('|');
+            const raid_id = args2.shift();
+            if(typeof raid_id == 'undefined'){
+                return message.reply("Sorry, I can't change your class unless you tell me which raid. Please check the syntax for this function and resubmit.");
+            }
+            var user = args2.shift();
+            if(typeof user == 'undefined'){
+                user = message.author.username;
+                //message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
+                //return;
+            }
+            var sRaid = await getRaid(raid_id);
+            if(typeof sRaid == 'undefined'){
+                return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            };
+            var promoteResponse = await promoteRaider(raid_id, sRaid, user, message);
+            var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+            updateRaidMessage(raid_id, sRaid, raidMsg);
+            writeRaid(raid_id, sRaid);
+            message.reply(promoteResponse);
         }
         if(command == "message"){
             message.guild.members.get('387317693365223434').send("Test Message.");
