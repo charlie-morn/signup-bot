@@ -114,23 +114,36 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
         return message.reply("You are already in this raid, please leave and rejoin if you want to swap roles.");
     }
     if(typeof res != 'undefined' && res != ''){
-        sRaid.reserves.push({name: user, cl: m_cl, adding_user: message.author.username});
+        sRaid.reserves.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
         message.react('✅');
         retStr =  "I've added you to the reserve list.";
     }
     else{
         if(sRaid.main.length < 6){
-            sRaid.main.push({name: user, cl: m_cl, adding_user: message.author.username});
+            sRaid.main.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
             message.react('✅');
             retStr = "You're in!";
         }else{
-            sRaid.reserves.push({name: user, cl:m_cl, adding_user: message.author.username});
+            sRaid.reserves.push({name: user, cl:m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
             message.react('❕');
             retStr = "List was full, but you have been added to reserves.";
         }
     }
     writeRaid(raid_id, sRaid);
     return retStr;
+}
+
+async function messageReserves(raid_id, sRaid, message){
+    if(sRaid.main.length == 5){
+        const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
+            + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
+            + "`"+ config.prefix + "promote " + raid_id + "|";
+        for(i=0; i<sRaid.reserves.length; i++){
+            const full_msg = msg + sRaid.reserves[i].name + '`';
+            await message.guild.members.get(sRaid.reserves[i].adding_user_id).send(full_msg);
+        }
+    }
+    return '';
 }
 
 function ownsUser(arr, index, message, author){
@@ -161,6 +174,9 @@ async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
     var index = findIndexOfUser(sRaid.main, user);
     if(index >= 0){
         retStr = modifyUserIndex(sRaid.main, index, user, message, sRaid.author, dispo, modTo);
+        if(dispo=='drop' && retStr.startsWith("User")){
+            await messageReserves(raid_id, sRaid, message);
+        }
     }else{
         index = findIndexOfUser(sRaid.reserves, user);
         if(index >= 0){
@@ -255,7 +271,8 @@ client.on("message", async message => {
             time: time,
             author: message.author.username,
             message_id: msg_id,
-            channel_id: m.channel.id
+            channel_id: m.channel.id,
+            author_id: message.author.id
           };
         //message.edit(sayMessage);
         message.delete().catch(O_o=>{});
@@ -263,7 +280,7 @@ client.on("message", async message => {
         writeRaid(raid_id, nRaid);
         m.edit(sayMessage);
     }
-    if(command === "purge") {
+    /**if(command === "purge") {
         // This command removes all messages from all users in the channel, up to 100.
         
         // get the delete count, as an actual number.
@@ -277,7 +294,7 @@ client.on("message", async message => {
         const fetched = await message.channel.fetchMessages({limit: deleteCount});
         message.channel.bulkDelete(fetched)
           .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
-      }
+      }*/
     return;
     }
     if(message.channel.name === config.signup_here){
@@ -343,7 +360,7 @@ client.on("message", async message => {
             const args2 = args.join(" ").split('|');
             const raid_id = args2.shift();
             if(typeof raid_id == 'undefined'){
-                return message.reply("Sorry, I can't drop you unless you tell me which raid you want out of. Please check the syntax for this function and resubmit.");
+                return message.reply("Sorry, I can't change your class unless you tell me which raid. Please check the syntax for this function and resubmit.");
             }
             var cl = args2.shift();
             if(typeof cl == 'undefined' || cl.length == 0){
@@ -365,7 +382,10 @@ client.on("message", async message => {
             updateRaidMessage(raid_id, sRaid, raidMsg);
             message.reply(changeResponse);
         }
-        if(command === "purge") {
+        if(command == "message"){
+            message.guild.members.get('387317693365223434').send("Test Message.");
+        }
+        /**if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.
             
             // get the delete count, as an actual number.
@@ -379,7 +399,8 @@ client.on("message", async message => {
             const fetched = await message.channel.fetchMessages({limit: deleteCount});
             message.channel.bulkDelete(fetched)
               .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
-          }
+          }*/
+          return;
     }
 });
 
