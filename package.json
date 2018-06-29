@@ -1,0 +1,10 @@
+{
+    "name": "signup-bot",
+    "description": "A bot for managing discord signups to raids.",
+    "author": "cliffhanger407 <cliffhanger407@gmail.com>",
+    "dependencies": {
+        "node-persist":"3.0.1",
+        "discord.js": "11.3.2"
+    },
+    "engine": "node >= 8.11.3"
+}

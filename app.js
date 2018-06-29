@@ -39,8 +39,8 @@ function getMessage(raid_id, nRaid){
     return "**" + nRaid.title + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
             + "\n" + nRaid.description
-            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `+join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
-            + "For example: `+join " + raid_id + "|Hunter" + "` would join me to the main roster, and `+join " + raid_id 
+            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `"+ config.prefix +"join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
+            + "For example: `"+ config.prefix +"join " + raid_id + "|Hunter" + "` would join me to the main roster, and `"+ config.prefix +"join " + raid_id 
             + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "|Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
             + "```" + getFormattedList(nRaid) + "```";
 }
@@ -132,28 +132,39 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     writeRaid(raid_id, sRaid);
     return retStr;
 }
-function dropIndex(arr, index, user, message, author){
-    if(message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author){
-        arr.splice(index,1);
+
+function ownsUser(arr, index, message, author){
+    return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
+}
+
+function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
+    if(ownsUser(arr, index, message, author)){
         message.react('✅');
-        return "User " + user + " removed successfully.";
+        if(dispo=='drop'){
+            arr.splice(index,1);
+            return "User " + user + " removed successfully.";
+        }
+        if(dispo=='class'){
+            arr[index].cl = modTo;
+            return "User " + user + " class changed to " + modTo + ".";
+        }
     }else{
         message.react('🛑');
-        return "You are not authorized to remove " + user + " from the raid.";
+        return "You are not authorized to modify " + user + ".";
     }
 }
-async function dropFromRaid(raid_id, sRaid, user, message){
+async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
     if(typeof user == 'undefined'){
         user = message.author.username;
     }
     var index = findIndexOfUser(sRaid.main, user);
     if(index >= 0){
-        retStr = dropIndex(sRaid.main, index, user, message, sRaid.author);
+        retStr = modifyUserIndex(sRaid.main, index, user, message, sRaid.author, dispo, modTo);
     }else{
         index = findIndexOfUser(sRaid.reserves, user);
         if(index >= 0){
-            retStr = dropIndex(sRaid.reserves, index, user, message, sRaid.author);
+            retStr = modifyUserIndex(sRaid.reserves, index, user, message, sRaid.author, dispo, modTo);
         }
         else{
             retStr = "That user is not in this raid. Check for spelling errors and try again.";
@@ -287,7 +298,7 @@ client.on("message", async message => {
                 return;
             }
             var cl = args2.shift();
-            if(typeof cl == 'undefined'){
+            if(typeof cl == 'undefined' || cl.length == 0){
                 cl = 'Fill'
             }
             const res = args2.shift();
@@ -320,13 +331,39 @@ client.on("message", async message => {
                 return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
             };
             if(user == sRaid.author){
-                return message.reply("You can't use this command to leave your own raid. You must delete it separately. (This functionality not yet implemented).")
+                return message.reply("You can't use this command to leave your own raid. You must cancel it separately. (This functionality not yet implemented).")
             } else {
-                var dropResponse = await dropFromRaid(raid_id, sRaid, user, message);
+                var dropResponse = await modifyRaidUser(raid_id, sRaid, user, message, 'drop');
                 var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
                 updateRaidMessage(raid_id, sRaid, raidMsg);
                 message.reply(dropResponse);
             }
+        }
+        if(command == "class"){
+            const args2 = args.join(" ").split('|');
+            const raid_id = args2.shift();
+            if(typeof raid_id == 'undefined'){
+                return message.reply("Sorry, I can't drop you unless you tell me which raid you want out of. Please check the syntax for this function and resubmit.");
+            }
+            var cl = args2.shift();
+            if(typeof cl == 'undefined' || cl.length == 0){
+                cl = 'Fill'
+            }
+            var user = args2.shift();
+            if(typeof user == 'undefined'){
+                user = message.author.username;
+                //message.reply("For now, I'm requiring you to give me a username to sign up. This may change in the future if my author can figure out something clever. Please check the syntax for this function and resubmit.")
+                //return;
+            }
+
+            var sRaid = await getRaid(raid_id);
+            if(typeof sRaid == 'undefined'){
+                return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            };
+            var changeResponse = await modifyRaidUser(raid_id, sRaid, user, message, 'class', cl);
+            var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+            updateRaidMessage(raid_id, sRaid, raidMsg);
+            message.reply(changeResponse);
         }
         if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.
