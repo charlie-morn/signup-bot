@@ -133,7 +133,14 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     writeRaid(raid_id, sRaid);
     return retStr;
 }
-
+async function messageAllRaiders(sRaid, message, text){
+    for(i=0; i<sRaid.main.length;i++){
+        await message.guild.members.get(sRaid.main[i].adding_user_id).send(text);
+    }
+    for(i=0; i<sRaid.reserves.length;i++){
+        await message.guild.members.get(sRaid.reserves[i].adding_user_id).send(text);
+    }
+}
 async function messageReserves(raid_id, sRaid, message){
     if(sRaid.main.length == 5){
         const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
@@ -146,7 +153,18 @@ async function messageReserves(raid_id, sRaid, message){
     }
     return '';
 }
-
+function ownsRaid(sender, sRaid){
+    return (sRaid.author_id == sender);
+}
+async function modifyRaidTime(raid_id, sRaid, newTime, message){
+    if(ownsRaid(message.author.id, sRaid)){
+        const oldTime = sRaid.time;
+        sRaid.time = newTime;
+        writeRaid(raid_id, sRaid);
+        return [0, sRaid.author + "'s raid " + sRaid.title + " has moved from " + oldTime + " to " + newTime + "."];
+    }
+    return [1, "You are not authorized to modify " + sRaid.author + "'s raid."]
+}
 function ownsUser(arr, index, message, author){
     return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
 }
@@ -288,7 +306,7 @@ client.on("message", async message => {
         var nRaid = {
             title: raids,
             description: desc,
-            main: [{name: message.author.username, cl: m_cl}],
+            main: [{name: message.author.username, cl: m_cl, adding_user_id: message.author.id}],
             reserves: [],
             time: time,
             author: message.author.username,
@@ -301,6 +319,35 @@ client.on("message", async message => {
         const sayMessage = getMessage(raid_id, nRaid); 
         writeRaid(raid_id, nRaid);
         m.edit(sayMessage);
+    }
+    if(command == "time"){
+        const args2 = args.join(" ").split('|');
+
+        var raid_id = args2.shift();
+        if(raid_id){raid_id = raid_id.trim();}
+        var sRaid = await getRaid(raid_id);
+        if(!sRaid){
+            message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            return;
+        };
+        var newTime = args2.shift();
+        if(newTime){newTime = newTime.trim();}
+        else{
+            message.delete().catch(O_o=>{});
+            return message.author.send("You must specify a time to update this raid to.");
+        }
+        const newTimeMessage = await modifyRaidTime(raid_id, sRaid, newTime, message);
+        if(newTimeMessage[0] == 0){
+            await messageAllRaiders(sRaid, message, newTimeMessage[1]);
+            var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+            updateRaidMessage(raid_id, sRaid, raidMsg);
+            message.delete().catch(O_o=>{});
+            return;
+        }
+        else{
+            message.delete().catch(O_o=>{});
+            return message.author.send(newTimeMessage[1]);
+        }
     }
     /**if(command === "purge") {
         // This command removes all messages from all users in the channel, up to 100.
@@ -333,7 +380,7 @@ client.on("message", async message => {
             const args2 = args.join(" ").split('|');
             var raid_id = args2.shift();
             if(!raid_id){
-                message.reply("Sorry, I can't add you unless you tell me which raid you want. Please check the syntax for this function and resubmit.")
+                message.reply("Sorry, I can't add you unless you tell me a title you want. Please check the syntax for this function and resubmit.")
                 return;
             }
             raid_id = raid_id.trim();
