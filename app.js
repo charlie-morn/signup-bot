@@ -373,7 +373,7 @@ client.on("message", async message => {
             if(!sRaid){
                 return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
             };
-            if(user == sRaid.author){
+            if(user == sRaid.author && user == message.author.username){
                 return message.reply("You can't use this command to leave your own raid. You must cancel it separately. (This functionality not yet implemented).")
             } else {
                 var dropResponse = await modifyRaidUser(raid_id, sRaid, user, message, 'drop');
