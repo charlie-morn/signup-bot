@@ -163,7 +163,7 @@ function promoteRaider(raid_id, sRaid, user, message){
             message.react('✅');
             return user + " has been promoted to the main roster."
         }else{
-            message.react('⚠️');
+            message.react('❌');
             return "You are not authorized to modify " + user + ".";
         }
     }else{
@@ -184,7 +184,7 @@ function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
             return "User " + user + " class changed to " + modTo + ".";
         }
     }else{
-        message.react('⚠️');
+        message.react('❌');
         return "You are not authorized to modify " + user + ".";
     }
 }
