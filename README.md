@@ -28,7 +28,7 @@ Use the `+raid` command with the syntax:
 ```
 +raid $Title | $Date | $Description (| $Class)
 ```
-You must specify a title, date, and description. All of these are free text and are not error checked in any way. I'll give a detailed walkthrough of how to create a raid, but the others will be less in-depth.
+You must specify a title, date, and description. All of these are free text and are not error checked in any way. I'll give a detailed walkthrough of how to create a raid, but the others will be less in-depth. Your message will be deleted and replaced by a reformatted one made by signup-bot!
 
 1) Type +raid
 2) Type your raid's title. Usually this will be something like "Leviathan" or "Lev>EoW>SOS" or... something descriptive. Now type the | character. It's above the enter key.
@@ -100,7 +100,7 @@ Use the `+time` command with syntax:
 +time $Raid_id|$Time
 ```
 
-You must specify a time (duh) that you want to update to. The time can be freeform, and is not errorchecked.
+You must specify a time (duh) that you want to update to. The time can be freeform, and is not errorchecked. Your message will be deleted and the raid will be edited by signup-bot.
 
 For example, you can type: `+time 6|7/1 5PM PST - Sorry, I forgot I had something going on tonight.`
 and the raid time will update to match. Additionally, a DM will be sent to everyone signed up for the raid. The message I just got from signup-bot says:
