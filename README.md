@@ -5,7 +5,7 @@ Currently the commands that can be issued with this bot are:
 
 In #signup-list
 
-`+raid $Title | $Date | $Description (| $Class)` to create a raid. Optionally establish your class.  
+[`+raid $Title | $Date | $Description (| $Class)`] to create a raid. Optionally establish your class.  
 `+time $Raid_id|$Time` to change the time of a raid you've created.  
 `+message $Raid_id|Message Text (can also be +message_all, +message_reserve or +message_main)` to message members of your raid  
 `+remind $Raid_id(|Reminder Text)` same as message, but will default to a reminder of the time if you don't put a message in.  
@@ -171,7 +171,7 @@ If you signed yourself up with a clever name (or signed up a friend), you must p
 
 `+drop 6` will drop me from the raid. If I want to un-sign-up @signup-bot's buddy, I will need to issue `+drop 6|signup-bot's buddy`. For now, capitalization and exact spelling are required. If there's a need, we may improve this functionality in the future.
 
-### To change your class for a raid you're in:
+### class
 
 Use the `+class` command with syntax:
 ```
