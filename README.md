@@ -17,6 +17,8 @@ In #signup-here
 ```
 Arguments in parentheses are optional and do not need to be included. The arguments are ordered, however, so if you want to join your friend Dave to the main roster as a titan, you'd say something like `+raid 5|Titan||Dave`. If Dave wanted to fill any class needed you could say `+raid 5|||Dave`. More detailed documentation is available on the [github site for the bot](https://github.com/cliffhanger407/signup-bot). Keep in mind the number will change, depending on which raid ID it is. I'm not a mind-reader.
 
+If the bot is misbehaving, you can DM @cliffhanger407 or create an issue on the github. Want to contribute? Make a pull request!
+
 If you can't find it, the | key is just above your Enter key on a standard keyboard.
 
 All the examples below are going to assume you're trying to modify raid 6. Obviouisly, if the raid isn't raid 6, change the number to match.
