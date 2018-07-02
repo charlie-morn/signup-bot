@@ -6,6 +6,7 @@ Currently the commands that can be issued with this bot are:
 In #signup-list
 +raid $Title | $Date | $Description (| $Class)
 +time $Raid_id|$Time
++message $Raid_id|Message Text (can also be +message_all, +message_reserve or +message_main)
 +remind $Raid_id(|Reminder Text)
 
 In #signup-here
