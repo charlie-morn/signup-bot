@@ -23,7 +23,7 @@ Arguments in parentheses are optional and do not need to be included. The argume
 
 More detailed documentation is available on the [github site for the bot](https://github.com/cliffhanger407/signup-bot).
 
-If the bot is misbehaving, you can DM @cliffhanger407 or create an issue on the github. Want to contribute? Make a pull request!
+If the bot is misbehaving, you can create an issue on the github. Want to contribute? Make a pull request!
 
 # Details
 
