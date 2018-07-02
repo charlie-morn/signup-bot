@@ -349,6 +349,28 @@ client.on("message", async message => {
             return message.author.send(newTimeMessage[1]);
         }
     }
+    if(command == "remind" || command == "reminder"){
+        const args2 = args.join(" ").split('|');
+
+        var raid_id = args2.shift();
+        var sRaid = await getRaid(raid_id);
+        if(!sRaid){
+            message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            return;
+        };
+        var remindText = args2.shift();
+        if(remindText){remindText = remindText.trim();}
+        else{
+            remindText = "This is a reminder that " + sRaid.author + "'s raid is starting at " + sRaid.time;
+        }
+        //Add a function here that will verify that the user is authorized to remind.
+        if(sRaid.author_id == message.author.id){
+            await messageAllRaiders(sRaid, message, remindText);
+        }else{
+            await message.author.send("You are not authorized to send reminders for this raid. Please check the ID and try again.");
+        }
+        message.delete().catch(O_o=>{});
+    }
     /**if(command === "purge") {
         // This command removes all messages from all users in the channel, up to 100.
         

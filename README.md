@@ -6,6 +6,7 @@ Currently the commands that can be issued with this bot are:
 In #signup-list
 +raid $Title | $Date | $Description (| $Class)
 +time $Raid_id|$Time
++remind $Raid_id(|Reminder Text)
 
 In #signup-here
 +join $Raid_id(|$Class|$Reserve|$User)
@@ -107,7 +108,24 @@ and the raid time will update to match. Additionally, a DM will be sent to every
 >### **signup-bot** - Today at 2:59 PM  
 >cliffhanger407's raid Leviathan has moved from 6/30 5PM PST to 7/1 5PM PST - Sorry, I forgot I had something going on tonight..
 
+### Remind users that they are signed up for a raid (creator only)
+Use the `+remind` command with syntax:
+```
++remind $Raid_id(|$Message)
+```
+
+If you don't specify a message and issue `+remind 6`, the following will be sent as a DM:
+>This is a reminder that cliffhanger407's raid is starting at 6/30 5PM PST
+
+If you choose to specify a message, the above text will be completely replaced. So if you send `+remind 6|Get your asses into FT1`, then everyone will get a message saying:
+>Get your asses into FT1
+
+
 ## Things you can do in #signup-here:
+1. Join raids
+2. Drop from a raid
+3. Change your class for a raid you are in
+4. Promote yourself to main roster for a raid you are in that has an open space
 
 ### To join an already existing raid:
 Use the `+join` command with the syntax:
