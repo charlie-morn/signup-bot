@@ -98,26 +98,40 @@ The bot takes care of all the formatting and signups for you!
 ### To change the time of an already existing raid (creator only)
 Use the `+time` command with syntax:
 ```
-+time $Raid_id|$Time
++time $Raid_id|$Time(|$AdditionalMessage)
 ```
 
 You must specify a time (duh) that you want to update to. The time can be freeform, and is not errorchecked. Your message will be deleted and the raid will be edited by signup-bot.
 
-For example, you can type: `+time 6|7/1 5PM PST - Sorry, I forgot I had something going on tonight.`
-and the raid time will update to match. Additionally, a DM will be sent to everyone signed up for the raid. The message I just got from signup-bot says:
+For example, you can type: `+time 6|7/1 5PM PST|Sorry, I forgot I had something going on tonight.`
+and the raid time will update to match. Additionally, a DM will be sent to everyone signed up for the raid. You can customize that message or leave the option blank. The message I just got from signup-bot says:
 >### **signup-bot** - Today at 2:59 PM  
->cliffhanger407's raid Leviathan has moved from 6/30 5PM PST to 7/1 5PM PST - Sorry, I forgot I had something going on tonight..
+>cliffhanger407's raid Leviathan has moved from 6/30 5PM PST to 7/1 5PM PST. Sorry, I forgot I had something going on tonight.
 
-### Remind users that they are signed up for a raid (creator only)
+### Mass message users that are signed up for a raid (creator only)
+These commands are all very closely related and will all be documented here:
+1. `message` or `message_all` - will message *everyone* on this raid, including reserves.
+2. `message_main` - will message the main roster with a message you supply.
+4. `message_reserve` - will message only those in the reserves.
+3. `remind` - same as message_main, but has a clean default option for reminders, and will message only those in the main roster.
+
+Use the `+message` commands with syntax:
+```
++message $Raid_id|$Message
+```
+
+You need to specify a message with all message commands except `remind`. Your message will be sent to the appropriate group of people on your roster as a DM.
+For example, `+message I'm sorry everyone, I have to cancel this raid tonight because my house is on fire.` will let everyone in your raid know of your plight.
+
 Use the `+remind` command with syntax:
 ```
 +remind $Raid_id(|$Message)
 ```
 
-If you don't specify a message and issue `+remind 6`, the following will be sent as a DM:
+If you don't specify a message and issue `+remind 6`, a reminder with the raid time will be sent as below:
 >This is a reminder that cliffhanger407's raid is starting at 6/30 5PM PST
 
-If you choose to specify a message, the above text will be completely replaced. So if you send `+remind 6|Get your asses into FT1`, then everyone will get a message saying:
+If you choose to specify a message when using `+remind`, the above text will be completely replaced. So if you send `+remind 6|Get your asses into FT1`, then everyone will get a message saying:
 >Get your asses into FT1
 
 

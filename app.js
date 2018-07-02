@@ -133,15 +133,27 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     writeRaid(raid_id, sRaid);
     return retStr;
 }
-async function messageAllRaiders(sRaid, message, text){
-    for(i=0; i<sRaid.main.length;i++){
-        await message.guild.members.get(sRaid.main[i].adding_user_id).send(text);
+async function messageRaiders(sRaid, message, text, group, endWithUser){
+    if(group == "main" || group =="all"){
+        for(i=0; i<sRaid.main.length;i++){
+            var sendText = text;
+            if(endWithUser){
+                sendText += sRaid.main[i].name + '`';
+            }
+            await message.guild.members.get(sRaid.main[i].adding_user_id).send(sendText);
+        }
     }
-    for(i=0; i<sRaid.reserves.length;i++){
-        await message.guild.members.get(sRaid.reserves[i].adding_user_id).send(text);
+    if(group == "reserve" || group == "all"){
+        for(i=0; i<sRaid.reserves.length;i++){
+            var sendText = text;
+            if(endWithUser){
+                sendText += sRaid.reserves[i].name + '`';
+            }
+            await message.guild.members.get(sRaid.reserves[i].adding_user_id).send(sendText);
+        }
     }
 }
-async function messageReserves(raid_id, sRaid, message){
+/* async function messageReserves(raid_id, sRaid, message){
     if(sRaid.main.length == 5){
         const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
             + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
@@ -152,7 +164,7 @@ async function messageReserves(raid_id, sRaid, message){
         }
     }
     return '';
-}
+} */
 function ownsRaid(sender, sRaid){
     return (sRaid.author_id == sender);
 }
@@ -214,8 +226,11 @@ async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
     var index = findIndexOfUser(sRaid.main, user);
     if(index >= 0){
         retStr = modifyUserIndex(sRaid.main, index, user, message, sRaid.author, dispo, modTo);
-        if(dispo=='drop' && retStr.startsWith("User")){
-            await messageReserves(raid_id, sRaid, message);
+        if(dispo=='drop' && retStr.startsWith("User") && sRaid.main.length == 5){
+            const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
+            + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
+            + "`"+ config.prefix + "promote " + raid_id + "|";
+            await messageRaiders(sRaid, message, msg, "reserve", true);
         }
     }else{
         index = findIndexOfUser(sRaid.reserves, user);
@@ -336,9 +351,11 @@ client.on("message", async message => {
             message.delete().catch(O_o=>{});
             return message.author.send("You must specify a time to update this raid to.");
         }
+        var text = args2.shift();
+        if(text){text = text.trim();}
         const newTimeMessage = await modifyRaidTime(raid_id, sRaid, newTime, message);
         if(newTimeMessage[0] == 0){
-            await messageAllRaiders(sRaid, message, newTimeMessage[1]);
+            await messageRaiders(sRaid, message, newTimeMessage[1] + " " + text, "all");
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(raid_id, sRaid, raidMsg);
             message.delete().catch(O_o=>{});
@@ -349,23 +366,36 @@ client.on("message", async message => {
             return message.author.send(newTimeMessage[1]);
         }
     }
-    if(command == "remind" || command == "reminder"){
+    if(command == "remind" || command == "message" || command == "message_all" || command == "message_reserve" 
+        ||command =="message_reserves" || command == "message_main" || command == "message_mains"){
         const args2 = args.join(" ").split('|');
 
         var raid_id = args2.shift();
         var sRaid = await getRaid(raid_id);
         if(!sRaid){
-            message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            await message.author.send("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            message.delete().catch(O_o=>{});
             return;
         };
-        var remindText = args2.shift();
-        if(remindText){remindText = remindText.trim();}
+        var msg_text = args2.shift();
+        if(msg_text){msg_text = msg_text.trim();}
+        else if(command=="remind"){
+            msg_text = "This is a reminder that " + sRaid.author + "'s raid is starting at " + sRaid.time;
+        }
         else{
-            remindText = "This is a reminder that " + sRaid.author + "'s raid is starting at " + sRaid.time;
+            await message.author.send("Sorry, you need to specify a message for your reminder.")
+            message.delete().catch(O_o=>{});
+            return;
+        }
+        var send_to = "all";
+        if(command=="messsage_reserve" || command == "message_reserves"){
+            send_to = "reserve";
+        }else if(command=="remind" || command=="message_main" || command == "message_mains"){
+            send_to = "main";
         }
         //Add a function here that will verify that the user is authorized to remind.
         if(sRaid.author_id == message.author.id){
-            await messageAllRaiders(sRaid, message, remindText);
+            await messageRaiders(sRaid, message, msg_text, send_to);
         }else{
             await message.author.send("You are not authorized to send reminders for this raid. Please check the ID and try again.");
         }
