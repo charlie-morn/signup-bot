@@ -15,7 +15,7 @@ In #signup-here
 `+join $Raid_id(|$Class|$Reserve|$User)` will join a raid.  
 `+drop $Raid_id(|$User)` will drop yourself or a user you signed up from a raid.  
 `+class $Raid_id(|$Class|$User)` will change your class for a raid.  
-`+promote $Raid_id($User)` will promote your role in the raid from reserves to main roster if there's space available.
+`+promote $Raid_id(|$User)` will promote your role in the raid from reserves to main roster if there's space available.
 
 (If you can't find it, the | key is just above your Enter key on a standard keyboard.)
 
