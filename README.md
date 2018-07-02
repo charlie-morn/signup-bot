@@ -5,17 +5,17 @@ Currently the commands that can be issued with this bot are:
 
 In #signup-list
 
-`+raid $Title | $Date | $Description (| $Class)` to create a raid. Optionally establish your class.  
-`+time $Raid_id|$Time` to change the time of a raid you've created.  
-`+message $Raid_id|Message Text (can also be +message_all, +message_reserve or +message_main)` to message members of your raid  
-`+remind $Raid_id(|Reminder Text)` same as message, but will default to a reminder of the time if you don't put a message in.  
+[`+raid $Title | $Date | $Description (| $Class)`](#raid) to create a raid. Optionally establish your class.  
+[`+time $Raid_id|$Time`](#time) to change the time of a raid you've created.  
+[`+message $Raid_id|Message Text (can also be +message_all, +message_reserve or +message_main)`](#message) to message members of your raid  
+[`+remind $Raid_id(|Reminder Text)`](#message) same as message, but will default to a reminder of the time if you don't put a message in.  
 
 In #signup-here
 
-`+join $Raid_id(|$Class|$Reserve|$User)` will join a raid.  
-`+drop $Raid_id(|$User)` will drop yourself or a user you signed up from a raid.  
-`+class $Raid_id(|$Class|$User)` will change your class for a raid.  
-`+promote $Raid_id(|$User)` will promote your role in the raid from reserves to main roster if there's space available.
+[`+join $Raid_id(|$Class|$Reserve|$User)`](#join) will join a raid.  
+[`+drop $Raid_id(|$User)`](#drop) will drop yourself or a user you signed up from a raid.  
+[`+class $Raid_id(|$Class|$User)`](#class) will change your class for a raid.  
+[`+promote $Raid_id(|$User)`](#promote) will promote your role in the raid from reserves to main roster if there's space available.
 
 (If you can't find it, the | key is just above your Enter key on a standard keyboard.)
 
@@ -30,10 +30,11 @@ If the bot is misbehaving, you can DM @cliffhanger407 or create an issue on the 
 All the examples below are going to assume you're trying to modify raid 6. Obviouisly, if the raid isn't raid 6, change the number to match.
 
 ## Things you can do in #signup-list
-1. Create Raids
-2. Change the time of a raid
+1. [Create Raids](#raid)
+2. [Change the time of a raid](#time)  
+3. [Message Members of the raid](#message)
 
-### To Create a Raid:
+### raid
 Use the `+raid` command with the syntax:
 ```
 +raid $Title | $Date | $Description (| $Class)
@@ -104,7 +105,7 @@ For example: `+join 5|Hunter` would join me to the main roster, and `+join 5|Fil
 
 The bot takes care of all the formatting and signups for you!
 
-### To change the time of an already existing raid (creator only)
+### time
 Use the `+time` command with syntax:
 ```
 +time $Raid_id|$Time(|$AdditionalMessage)
@@ -117,7 +118,7 @@ and the raid time will update to match. Additionally, a DM will be sent to every
 >### **signup-bot** - Today at 2:59 PM  
 >cliffhanger407's raid Leviathan has moved from 6/30 5PM PST to 7/1 5PM PST. Sorry, I forgot I had something going on tonight.
 
-### Mass message users that are signed up for a raid (creator only)
+### message
 These commands are all very closely related and will all be documented here:
 1. `message` or `message_all` - will message *everyone* on this raid, including reserves.
 2. `message_main` - will message the main roster with a message you supply.
@@ -150,7 +151,7 @@ If you choose to specify a message when using `+remind`, the above text will be 
 3. Change your class for a raid you are in
 4. Promote yourself to main roster for a raid you are in that has an open space
 
-### To join an already existing raid:
+### join
 Use the `+join` command with the syntax:
 ```
 +join Raid_ID(|Class|Reserve|User)
@@ -162,7 +163,7 @@ Alternatively, if you need to do a run on your titan, you could type `+join 6|Ti
 
 If you try to sign-up for a raid that is already filled up, don't worry, I'll add you directly to the reserves. And, if someone `+drop`s, you'll get a DM letting you know that there's an open spot.
 
-### To leave a raid you are in:
+### drop
 Use the `+drop` command with syntax:
 ```
 +drop $Raid_id(|$User)
@@ -171,7 +172,7 @@ If you signed yourself up with a clever name (or signed up a friend), you must p
 
 `+drop 6` will drop me from the raid. If I want to un-sign-up @signup-bot's buddy, I will need to issue `+drop 6|signup-bot's buddy`. For now, capitalization and exact spelling are required. If there's a need, we may improve this functionality in the future.
 
-### To change your class for a raid you're in:
+### class
 
 Use the `+class` command with syntax:
 ```
@@ -181,3 +182,11 @@ Use the `+class` command with syntax:
 If you previously specified a class and want to swap to Fill, all you need to do is type `+class 6`. If you want to change your class to punchbro, just type `+class 6|punchbro`. If you signed up your buddy for a raid as fill, and they let you know that they need to run on Warlock, you can just say `+class 6|warlock|signup-bot's buddy`.
 
 That's about it for now. We will continue collecting requirements and do development over the coming months, letting you know what's available.
+
+### promote
+Use the `+class` command with syntax:
+Use the `+class` command with syntax:
+```
++class $Raid_id(|$User)
+```
+If you signed yourself up, you can simply type `+promote 6`. If you need to change a different user-name, you will have to type `+promote 6|signup-bot's buddy`. You can only promote yourself or someone you signed up. The raid creator can also promote reserves.
