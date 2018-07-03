@@ -356,6 +356,7 @@ client.on("message", async message => {
         }
         var text = args2.shift();
         if(text){text = text.trim();}
+        else{text = "";}
         const newTimeMessage = await modifyRaidTime(raid_id, sRaid, newTime, message);
         if(newTimeMessage[0] == 0){
             await messageRaiders(sRaid, message, newTimeMessage[1] + " " + text, "all");
