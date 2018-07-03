@@ -38,12 +38,14 @@ function getFormattedList(my_Raid){
 function getMessage(raid_id, nRaid){
     return "**" + nRaid.title + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
-            + "\n**Bot Raid ID:**" + raid_id 
+            + "\n**Bot Raid ID: **" + raid_id 
             + "\n" + nRaid.description
             + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `"+ config.prefix +"join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
             + "For example: `"+ config.prefix +"join " + raid_id + "|Hunter" + "` would join me to the main roster, and `"+ config.prefix +"join " + raid_id 
             + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "|Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
-            + "```" + getFormattedList(nRaid) + "```";
+            + "```" + getFormattedList(nRaid) + "```"
+            + "\n ."
+            + "\n .";
 }
 
 async function getId(){
