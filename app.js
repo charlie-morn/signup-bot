@@ -156,18 +156,6 @@ async function messageRaiders(sRaid, message, text, group, endWithUser){
         }
     }
 }
-/* async function messageReserves(raid_id, sRaid, message){
-    if(sRaid.main.length == 5){
-        const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
-            + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
-            + "`"+ config.prefix + "promote " + raid_id + "|";
-        for(i=0; i<sRaid.reserves.length; i++){
-            const full_msg = msg + sRaid.reserves[i].name + '`';
-            await message.guild.members.get(sRaid.reserves[i].adding_user_id).send(full_msg);
-        }
-    }
-    return '';
-} */
 function ownsRaid(sender, sRaid){
     return (sRaid.author_id == sender);
 }
@@ -179,6 +167,9 @@ async function modifyRaidTime(raid_id, sRaid, newTime, message){
         return [0, sRaid.author + "'s raid " + sRaid.title + " has moved from " + oldTime + " to " + newTime + "."];
     }
     return [1, "You are not authorized to modify " + sRaid.author + "'s raid."]
+}
+async function deleteRaid(message){
+    message.delete()
 }
 function ownsUser(arr, index, message, author){
     return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
@@ -371,7 +362,8 @@ client.on("message", async message => {
         }
     }
     if(command == "remind" || command == "message" || command == "message_all" || command == "message_reserve" 
-        ||command =="message_reserves" || command == "message_main" || command == "message_mains"){
+        || command == "message_reserves" || command == "message_main" || command == "message_mains" 
+        || command == "delete"){
         const args2 = args.join(" ").split('|');
 
         var raid_id = args2.shift();
@@ -383,10 +375,10 @@ client.on("message", async message => {
         };
         var msg_text = args2.shift();
         if(msg_text){msg_text = msg_text.trim();}
-        else if(command=="remind"){
+        else if(command == "remind"){
             msg_text = "This is a reminder that " + sRaid.author + "'s raid is starting at " + sRaid.time;
         }
-        else{
+        else if(command != "delete"){
             await message.author.send("Sorry, you need to specify a message for your reminder.")
             message.delete().catch(O_o=>{});
             return;
@@ -399,7 +391,14 @@ client.on("message", async message => {
         }
         //Add a function here that will verify that the user is authorized to remind.
         if(sRaid.author_id == message.author.id){
-            await messageRaiders(sRaid, message, msg_text, send_to);
+            if(msg_text){
+                await messageRaiders(sRaid, message, msg_text, send_to);
+            }
+            if (command == "delete"){
+                var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+                await deleteRaid(raidMsg)
+                    .catch(console.error);
+            }
         }else{
             await message.author.send("You are not authorized to send reminders for this raid. Please check the ID and try again.");
         }
