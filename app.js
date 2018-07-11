@@ -136,6 +136,19 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     writeRaid(raid_id, sRaid);
     return retStr;
 }
+function getSignupListHelp(){
+    var ret = "The commands you can issue here include `+raid`, `+time`, `+delete` and the variants of `+message`.\n"
+    ret += "To create a raid, use the syntax `+raid Title | Date | Description (| Class)`. (Note that the parentheses shouldn't be included, they are to designate optional arguments)."
+    ret += "\nFor more help related to the #signup-list channel, please go to https://github.com/cliffhanger407/signup-bot#things-you-can-do-in-signup-list";
+    return ret;
+}
+
+function getSignupHereHelp(){
+    var ret = "The commands you can issue here include `+join`, `+drop`, `+class`, and `+promote`.\n";
+    ret += "To join a raid (raid IDs are noted in the raid posting) as any class simply type `+join RaidID`. If you want to play as your Titan just type `+join RaidID|Titan`";
+    ret += "For help related to the #signup-here channel, please go to https://github.com/cliffhanger407/signup-bot#things-you-can-do-in-signup-here";
+    return ret;
+}
 async function messageRaiders(sRaid, message, text, group, endWithUser){
     if(group == "main" || group =="all"){
         for(i=0; i<sRaid.main.length;i++){
@@ -404,6 +417,10 @@ client.on("message", async message => {
         }
         message.delete().catch(O_o=>{});
     }
+    if(command == "help"){
+        await message.author.send(getSignupListHelp());
+        message.delete().catch(O_o=>{});
+    }
     /**if(command === "purge") {
         // This command removes all messages from all users in the channel, up to 100.
         
@@ -528,6 +545,9 @@ client.on("message", async message => {
             updateRaidMessage(raid_id, sRaid, raidMsg);
             writeRaid(raid_id, sRaid);
             message.reply(promoteResponse);
+        }
+        if(command == "help"){
+            await message.reply(getSignupHereHelp());
         }
         /**if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.
