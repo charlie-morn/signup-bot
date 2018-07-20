@@ -260,6 +260,10 @@ client.on("ready", () => {
   client.user.setActivity(`For help go to https://goo.gl/QLSNVU`);
 });
 
+client.on("error", (e) => console.error(e));
+client.on("warn", (e) => console.warn(e));
+//client.on("debug", (e) => console.info(e));
+
 client.on("guildCreate", guild => {
   // This event triggers when the bot joins a guild.
   console.log(`New guild joined: ${guild.name} (id: ${guild.id}). This guild has ${guild.memberCount} members!`);
