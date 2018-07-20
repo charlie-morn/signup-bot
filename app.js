@@ -14,6 +14,46 @@ const config = require("./config.json");
 const storage = require('node-persist');
 //storage holds all the raid information that the bot uses
 
+async function createRaid(args2, message, mID, mChID){
+    const raids = args2.shift();
+    if(!raids){
+        message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
+        message.delete().catch(O_o=>{});
+        return;
+    }
+        //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
+    const time = args2.shift();
+    if(!time){
+        message.author.send("Sorry, I couldn't create this raid because you haven't specified a time or description. Please re-read the pinned syntax for creating raids and resbumit.")
+        message.delete().catch(O_o=>{});
+        return;
+    }
+    const desc = args2.shift();
+    if(!desc){
+        message.author.send("Sorry, I couldn't create this raid because you haven't specified a description. Please re-read the pinned syntax for creating raids and resbumit.")
+        message.delete().catch(O_o=>{});
+        return;
+    }
+    var m_cl = args2.shift();
+    if(!m_cl){
+        m_cl = 'Fill';
+    }
+    
+    var nRaid = {
+        title: raids,
+        description: desc,
+        main: [{name: message.author.username, cl: m_cl, adding_user_id: message.author.id}],
+        reserves: [],
+        time: time,
+        author: message.author.username,
+        message_id: mID,
+        channel_id: mChID,
+        author_id: message.author.id
+        };
+    //message.edit(sayMessage);
+    return nRaid;
+}
+
 function getFormattedList(my_Raid){
     var ret = "====ROSTER====\n";
     for (var i = 0; i<6; i++){
@@ -187,7 +227,7 @@ async function deleteRaid(message){
 function ownsUser(arr, index, message, author){
     return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
 }
-function promoteRaider(raid_id, sRaid, user, message){
+function promoteRaider(sRaid, user, message){
     const index = findIndexOfUser(sRaid.reserves, user)
     if(sRaid.main.length > 5 && index > -1){
         message.react('❌');
@@ -299,48 +339,9 @@ client.on("message", async message => {
     if(command === "raid") {
         //The syntax for creating a new raid is:
         //+raid Raid Name, 5/21 8:00 PST, (Description, Class)
-        const args2 = args.join(" ").split('|');
-
-        const raids = args2.shift();
-        if(!raids){
-            message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
-            message.delete().catch(O_o=>{});
-            return;
-        }
-            //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
-        const time = args2.shift();
-        if(!time){
-            message.author.send("Sorry, I couldn't create this raid because you haven't specified a time or description. Please re-read the pinned syntax for creating raids and resbumit.")
-            message.delete().catch(O_o=>{});
-            return;
-        }
-        const desc = args2.shift();
-        if(!desc){
-            message.author.send("Sorry, I couldn't create this raid because you haven't specified a description. Please re-read the pinned syntax for creating raids and resbumit.")
-            message.delete().catch(O_o=>{});
-            return;
-        }
-        var m_cl = args2.shift();
-        if(!m_cl){
-            m_cl = 'Fill';
-        }
         const m = await message.channel.send("Preparing...");
-        const msg_id = m.id;
-
+        const nRaid = await createRaid(args.join(" ").split('|'), message, m.id, m.channel.id);
         var raid_id = await getId();//await storage.length() + 1);
-        
-        var nRaid = {
-            title: raids,
-            description: desc,
-            main: [{name: message.author.username, cl: m_cl, adding_user_id: message.author.id}],
-            reserves: [],
-            time: time,
-            author: message.author.username,
-            message_id: msg_id,
-            channel_id: m.channel.id,
-            author_id: message.author.id
-          };
-        //message.edit(sayMessage);
         message.delete().catch(O_o=>{});
         const sayMessage = getMessage(raid_id, nRaid); 
         writeRaid(raid_id, nRaid);
