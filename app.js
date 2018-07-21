@@ -104,6 +104,15 @@ async function getId(){
     return String(await storage.length() + 1); // yourname
 }
 
+async function reactRaid(message){
+    await message.react(config.warlock);
+    await message.react(config.titan);
+    await message.react(config.hunter);
+    await message.react(config.fill);
+    await message.react('❓');
+    await message.react('🚪');
+}
+
 async function writeRaid(raid_id, nRaid){
     //Writes the raid to persistent storage.
     await storage.init({
@@ -119,6 +128,21 @@ async function writeRaid(raid_id, nRaid){
         forgiveParseErrors: false
     });
     await storage.setItem(raid_id, nRaid);
+
+    await storage.init({
+        dir: 'message_raid_map',
+        stringify: JSON.stringify,
+        parse: JSON.parse,
+        encoding: 'utf8',
+        logging: false,  // can also be custom logging function
+        ttl: false, // ttl* [NEW], can be true for 24h default or a number in MILLISECONDS
+        expiredInterval: 2 * 60 * 1000, // every 2 minutes the process will clean-up the expired cache
+        // in some cases, you (or some other service) might add non-valid storage files to your
+        // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
+        forgiveParseErrors: false
+    });
+    await storage.setItem(nRaid.message_id, raid_id);
+
 }
 
 async function getRaid(raid_id){
@@ -136,6 +160,22 @@ async function getRaid(raid_id){
         forgiveParseErrors: false
     });
     return await storage.getItem(raid_id)
+}
+async function getRaidFromMessageID(message_id){
+        //Reads the raid from persistent storage.
+        await storage.init({
+            dir: 'message_raid_map',
+            stringify: JSON.stringify,
+            parse: JSON.parse,
+            encoding: 'utf8',
+            logging: false,  // can also be custom logging function
+            ttl: false, // ttl* [NEW], can be true for 24h default or a number in MILLISECONDS
+            expiredInterval: 2 * 60 * 1000, // every 2 minutes the process will clean-up the expired cache
+            // in some cases, you (or some other service) might add non-valid storage files to your
+            // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
+            forgiveParseErrors: false
+        });
+        return await storage.getItem(message_id)
 }
 async function updateRaidMessage(raid_id, sRaid, message){
     const sayMessage = getMessage(raid_id, sRaid); 
@@ -316,6 +356,32 @@ client.on("guildDelete", guild => {
   client.user.setActivity(`For help go to https://goo.gl/QLSNVU`);
 });
 
+const events = {
+	MESSAGE_REACTION_ADD: 'messageReactionAdd',
+	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
+};
+
+client.on('raw', async event => {
+	if (!events.hasOwnProperty(event.t)) return;
+
+	const { d: data } = event;
+	const user = client.users.get(data.user_id);
+	const channel = client.channels.get(data.channel_id) || await user.createDM();
+
+	if (channel.messages.has(data.message_id)) return;
+
+	const message = await channel.fetchMessage(data.message_id);
+	const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
+	const reaction = message.reactions.get(emojiKey);
+
+	client.emit(events[event.t], reaction, user);
+});
+
+client.on('messageReactionAdd', (reaction, user) => {
+    if(user.bot) return;
+    
+	console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
+});
 
 client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
@@ -337,15 +403,14 @@ client.on("message", async message => {
     const args = message.content.slice(config.prefix.length).split(/ +/g);
     const command = args.shift().toLowerCase();
     if(command === "raid") {
-        //The syntax for creating a new raid is:
-        //+raid Raid Name, 5/21 8:00 PST, (Description, Class)
         const m = await message.channel.send("Preparing...");
         const nRaid = await createRaid(args.join(" ").split('|'), message, m.id, m.channel.id);
         var raid_id = await getId();//await storage.length() + 1);
         message.delete().catch(O_o=>{});
         const sayMessage = getMessage(raid_id, nRaid); 
         writeRaid(raid_id, nRaid);
-        m.edit(sayMessage);
+        await m.edit(sayMessage);
+        await reactRaid(m);
     }
     if(command == "time"){
         const args2 = args.join(" ").split('|');

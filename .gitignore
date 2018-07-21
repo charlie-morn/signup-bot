@@ -1,6 +1,7 @@
 # Private files
 config.json
 raid_store/
+message_raid_map/
 images/
 discordmessage.md
 
