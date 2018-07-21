@@ -12,6 +12,7 @@ const config = require("./config.json");
 // config.prefix contains the message prefix.
 
 const storage = require('node-persist');
+const storage_lookup = require('node-persist')
 //storage holds all the raid information that the bot uses
 
 async function createRaid(args2, message, mID, mChID){
@@ -48,23 +49,40 @@ async function createRaid(args2, message, mID, mChID){
         author: message.author.username,
         message_id: mID,
         channel_id: mChID,
-        author_id: message.author.id
+        author_id: message.author.id,
+        players: 6
         };
     //message.edit(sayMessage);
     return nRaid;
 }
 
-function getFormattedList(my_Raid){
+function getActivityPlayers(raid_id){
+    mRaid = getRaid(raid_id)
+    if(mRaid){
+        if(mRaid.players) return parseInt(mRaid.players);
+        else return 6;
+    }
+    else{ return 6;}
+}
+
+function getFormattedList(raid_id, my_Raid){
     var ret = "====ROSTER====\n";
-    for (var i = 0; i<6; i++){
+    var players = getActivityPlayers(raid_id)
+    for (var i = 0; i<players; i++){
         if(!my_Raid.main[i]){
             ret += String(i+1) + '. OPEN \n';
         }else{
             ret += String(i+1) + '. ' + my_Raid.main[i].name + ' - ' + my_Raid.main[i].cl + '\n';
         }
     }
-    ret += "====RESERVES==== \n"
-    for (var i = 0; i<Math.max(my_Raid.reserves.length, 2); i++){
+    if(my_Raid.main.length > players){
+        ret += "====RESERVES - WILL AUTOPROMOTE IF SPACE OPENS====\n"
+        for (var i=players; i< my_Raid.main.length; i++){
+            ret += String(i+1 - players) + '. ' + my_Raid.main[i].name + ' - ' + my_Raid.main[i].cl + '\n';
+        }
+    }
+    ret += "====TENTATITVE - WILL NOT AUTOPROMOTE==== \n"
+    for (var i = 0; i<Math.max(my_Raid.reserves.length, 1); i++){
         if(!my_Raid.reserves[i]){
             ret += String(i+1) + '. OPEN \n';
         }else{
@@ -83,9 +101,7 @@ function getMessage(raid_id, nRaid){
             + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `"+ config.prefix +"join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
             + "For example: `"+ config.prefix +"join " + raid_id + "|Hunter" + "` would join me to the main roster, and `"+ config.prefix +"join " + raid_id 
             + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "|Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
-            + "```" + getFormattedList(nRaid) + "```"
-            + "\n ."
-            + "\n .";
+            + "```" + getFormattedList(raid_id, nRaid) + "```";
 }
 
 async function getId(){
@@ -109,7 +125,7 @@ async function reactRaid(message){
     await message.react(config.titan);
     await message.react(config.hunter);
     await message.react(config.fill);
-    await message.react('❓');
+    await message.react('🔃');
     await message.react('🚪');
 }
 
@@ -129,7 +145,7 @@ async function writeRaid(raid_id, nRaid){
     });
     await storage.setItem(raid_id, nRaid);
 
-    await storage.init({
+    await storage_lookup.init({
         dir: 'message_raid_map',
         stringify: JSON.stringify,
         parse: JSON.parse,
@@ -141,7 +157,7 @@ async function writeRaid(raid_id, nRaid){
         // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
         forgiveParseErrors: false
     });
-    await storage.setItem(nRaid.message_id, raid_id);
+    await storage_lookup.setItem(nRaid.message_id, raid_id);
 
 }
 
@@ -161,9 +177,9 @@ async function getRaid(raid_id){
     });
     return await storage.getItem(raid_id)
 }
-async function getRaidFromMessageID(message_id){
+async function getRaidIDFromMessageID(message_id){
         //Reads the raid from persistent storage.
-        await storage.init({
+        await storage_lookup.init({
             dir: 'message_raid_map',
             stringify: JSON.stringify,
             parse: JSON.parse,
@@ -175,7 +191,7 @@ async function getRaidFromMessageID(message_id){
             // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
             forgiveParseErrors: false
         });
-        return await storage.getItem(message_id)
+        return await storage_lookup.getItem(message_id)
 }
 async function updateRaidMessage(raid_id, sRaid, message){
     const sayMessage = getMessage(raid_id, sRaid); 
@@ -199,18 +215,18 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
     }
     if(res){
         sRaid.reserves.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
-        message.react('✅');
-        retStr =  "I've added you to the reserve list.";
+        if (message) message.react('✅');
+        retStr =  "I've added you to the tentative list. You will not be autopromoted.";
     }
     else{
-        if(sRaid.main.length < 6){
+        if(sRaid.main.length < getActivityPlayers(raid_id)){
             sRaid.main.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
-            message.react('✅');
+            if (message) message.react('✅');
             retStr = "You're in!";
         }else{
-            sRaid.reserves.push({name: user, cl:m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
-            message.react('❕');
-            retStr = "List was full, but you have been added to reserves.";
+            sRaid.main.push({name: user, cl:m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
+            if (message) message.react('❕');
+            retStr = "List was full, but you have been added to reserves. You will be autopromoted if space opens.";
         }
     }
     writeRaid(raid_id, sRaid);
@@ -267,9 +283,9 @@ async function deleteRaid(message){
 function ownsUser(arr, index, message, author){
     return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
 }
-function promoteRaider(sRaid, user, message){
+function promoteRaider(raid_id, sRaid, user, message){
     const index = findIndexOfUser(sRaid.reserves, user)
-    if(sRaid.main.length > 5 && index > -1){
+    if(sRaid.main.length > getActivityPlayers(raid_id) && index > -1){
         message.react('❌');
         return "That raid is full, cannot promote.";
     }else if(index > -1){
@@ -313,11 +329,15 @@ async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
     var index = findIndexOfUser(sRaid.main, user);
     if(index >= 0){
         retStr = modifyUserIndex(sRaid.main, index, user, message, sRaid.author, dispo, modTo);
-        if(dispo=='drop' && retStr.startsWith("User") && sRaid.main.length == 5){
+        if(dispo=='drop' && retStr.startsWith("User") && sRaid.main.length == getActivityPlayers(raid_id) - 1){
             const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
             + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
             + "`"+ config.prefix + "promote " + raid_id + "|";
             await messageRaiders(sRaid, message, msg, "reserve", true);
+        }else if (sRaid.main.length >= getActivityPlayers(raid_id)){
+            const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
+            + "You have been autopromoted into the main roster."
+            await message.guild.members.get(sRaid.main[getActivityPlayers(raid_id) - 1].adding_user_id).send(msg);
         }
     }else{
         index = findIndexOfUser(sRaid.reserves, user);
@@ -379,7 +399,7 @@ client.on('raw', async event => {
 
 client.on('messageReactionAdd', (reaction, user) => {
     if(user.bot) return;
-    
+
 	console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
 });
 
@@ -637,5 +657,7 @@ client.on("message", async message => {
           return;
     }
 });
+
+process.on('unhandledRejection', err => console.error(`Uncaught Promise Rejection: \n${err.stack}`));
 
 client.login(config.token);
