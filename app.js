@@ -12,7 +12,7 @@ const config = require("./config.json");
 // config.prefix contains the message prefix.
 
 const storage = require('node-persist');
-const storage_lookup = require('node-persist')
+const storage_lookup = require('node-persist');
 //storage holds all the raid information that the bot uses
 
 async function createRaid(args2, message, mID, mChID){
@@ -50,14 +50,14 @@ async function createRaid(args2, message, mID, mChID){
         message_id: mID,
         channel_id: mChID,
         author_id: message.author.id,
-        players: 6
+        players: "6"
         };
     //message.edit(sayMessage);
     return nRaid;
 }
 
-function getActivityPlayers(raid_id){
-    mRaid = getRaid(raid_id)
+async function getActivityPlayers(raid_id){
+    mRaid = await getRaid(raid_id)
     if(mRaid){
         if(mRaid.players) return parseInt(mRaid.players);
         else return 6;
@@ -65,9 +65,9 @@ function getActivityPlayers(raid_id){
     else{ return 6;}
 }
 
-function getFormattedList(raid_id, my_Raid){
+async function getFormattedList(raid_id, my_Raid){
     var ret = "====ROSTER====\n";
-    var players = getActivityPlayers(raid_id)
+    var players = await getActivityPlayers(raid_id)
     for (var i = 0; i<players; i++){
         if(!my_Raid.main[i]){
             ret += String(i+1) + '. OPEN \n';
@@ -93,15 +93,15 @@ function getFormattedList(raid_id, my_Raid){
     return ret;
 }
 
-function getMessage(raid_id, nRaid){
+async function getMessage(raid_id, nRaid){
     return "**" + nRaid.title + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
-            + "\n**Bot Raid ID: **" + raid_id 
+            + "\n**Raid ID: **" + raid_id 
             + "\n" + nRaid.description
-            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `"+ config.prefix +"join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
+            + "\n\nTo join this raid, react with the class icon you'd like to use below. For fill, use the destiny logo." + config.signup_here + " with the command `"+ config.prefix +"join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
             + "For example: `"+ config.prefix +"join " + raid_id + "|Hunter" + "` would join me to the main roster, and `"+ config.prefix +"join " + raid_id 
             + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "|Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
-            + "```" + getFormattedList(raid_id, nRaid) + "```";
+            + "```" + await getFormattedList(raid_id, nRaid) + "```";
 }
 
 async function getId(){
@@ -178,23 +178,23 @@ async function getRaid(raid_id){
     return await storage.getItem(raid_id)
 }
 async function getRaidIDFromMessageID(message_id){
-        //Reads the raid from persistent storage.
-        await storage_lookup.init({
-            dir: 'message_raid_map',
-            stringify: JSON.stringify,
-            parse: JSON.parse,
-            encoding: 'utf8',
-            logging: false,  // can also be custom logging function
-            ttl: false, // ttl* [NEW], can be true for 24h default or a number in MILLISECONDS
-            expiredInterval: 2 * 60 * 1000, // every 2 minutes the process will clean-up the expired cache
-            // in some cases, you (or some other service) might add non-valid storage files to your
-            // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
-            forgiveParseErrors: false
-        });
-        return await storage_lookup.getItem(message_id)
+    //Reads the raid from persistent storage.
+    await storage_lookup.init({
+        dir: 'message_raid_map',
+        stringify: JSON.stringify,
+        parse: JSON.parse,
+        encoding: 'utf8',
+        logging: false,  // can also be custom logging function
+        ttl: false, // ttl* [NEW], can be true for 24h default or a number in MILLISECONDS
+        expiredInterval: 2 * 60 * 1000, // every 2 minutes the process will clean-up the expired cache
+        // in some cases, you (or some other service) might add non-valid storage files to your
+        // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
+        forgiveParseErrors: false
+    });
+    return await storage_lookup.getItem(message_id)
 }
 async function updateRaidMessage(raid_id, sRaid, message){
-    const sayMessage = getMessage(raid_id, sRaid); 
+    const sayMessage = await getMessage(raid_id, sRaid); 
     message.edit(sayMessage);
     //client.TextChannel.fetchMessage(sRaid.message_id)
     //    .then(message => message.edit(sayMessage));
@@ -207,29 +207,33 @@ function findIndexOfUser(userList, user){
     }
     return -1;
 }
-async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
+async function addToRaid(raid_id, sRaid, user, m_cl, res, message, adding_user_id){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    if(!adding_user_id) { var adding_id = message.author.id;}
+    else{ var adding_id = adding_user_id;}
+    if(!message) {var adding_user = user;}
+    else{ var adding_user = message.author.username; }
     if(findIndexOfUser(sRaid.main, user) != -1 || findIndexOfUser(sRaid.reserves, user) != -1){
         return "You are already in this raid, please use `"+config.prefix+"class`  to change classes, or `" + config.prefix + "promote`"
             + " to promote to the main roster."
     }
     if(res){
-        sRaid.reserves.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
+        sRaid.reserves.push({name: user, cl: m_cl, adding_user: adding_user, adding_user_id: adding_id});
         if (message) message.react('✅');
         retStr =  "I've added you to the tentative list. You will not be autopromoted.";
     }
     else{
         if(sRaid.main.length < getActivityPlayers(raid_id)){
-            sRaid.main.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
+            sRaid.main.push({name: user, cl: m_cl, adding_user: adding_user, adding_user_id: adding_id});
             if (message) message.react('✅');
             retStr = "You're in!";
         }else{
-            sRaid.main.push({name: user, cl:m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
+            sRaid.main.push({name: user, cl:m_cl, adding_user: adding_user, adding_user_id: adding_id});
             if (message) message.react('❕');
             retStr = "List was full, but you have been added to reserves. You will be autopromoted if space opens.";
         }
     }
-    writeRaid(raid_id, sRaid);
+    await writeRaid(raid_id, sRaid);
     return retStr;
 }
 function getSignupListHelp(){
@@ -272,7 +276,7 @@ async function modifyRaidTime(raid_id, sRaid, newTime, message){
     if(ownsRaid(message.author.id, sRaid)){
         const oldTime = sRaid.time;
         sRaid.time = newTime;
-        writeRaid(raid_id, sRaid);
+        await writeRaid(raid_id, sRaid);
         return [0, sRaid.author + "'s raid " + sRaid.title + " has moved from " + oldTime + " to " + newTime + "."];
     }
     return [1, "You are not authorized to modify " + sRaid.author + "'s raid."]
@@ -281,33 +285,47 @@ async function deleteRaid(message){
     message.delete()
 }
 function ownsUser(arr, index, message, author){
-    return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
+    return (message.author.username == config.botname || 
+        message.author.username==arr[index].name || 
+        message.author.username==arr[index].adding_user || 
+        message.author.username == author);
 }
-function promoteRaider(raid_id, sRaid, user, message){
-    const index = findIndexOfUser(sRaid.reserves, user)
-    if(sRaid.main.length > getActivityPlayers(raid_id) && index > -1){
-        message.react('❌');
-        return "That raid is full, cannot promote.";
-    }else if(index > -1){
+function swapRoles(raid_id, sRaid, user, message){
+    var index = findIndexOfUser(sRaid.reserves, user);
+    var retStr = "";
+    if(index > -1){
         if(ownsUser(sRaid.reserves, index, message, sRaid.author)){
             const user_dict = sRaid.reserves[index];
             sRaid.main.push(user_dict);
             sRaid.reserves.splice(index, 1);
-            message.react('✅');
-            return user + " has been promoted to the main roster."
+            //message.react('✅');
+            if(sRaid.main.length > getActivityPlayers(raid_id) && index > -1){
+                //message.react('❌');
+                return "❕ This raid is full, but " + user + " has been moved to the reserves list.";
+            }
+            return "✅ " + user + " has been promoted to the main roster."
         }else{
-            message.react('❌');
-            return "You are not authorized to modify " + user + ".";
+            //message.react('❌');
+            return "❌ You are not authorized to modify " + user + ".";
         }
     }else{
-        message.react('❌');
+        index = findIndexOfUser(sRaid.main, user);
+        if(index > -1){
+            if (ownsUser(sRaid.main, index, message, sRaid.author)){
+                
+            }
+        }
+        //message.react('❌');
         return "That user is not in the reserves list for this raid.";
     }
     
 }
+function promoteRaider(raid_id, sRaid, user, message){
+    return swapRoles(raid_id, sRaid, user, message);
+}
 function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
     if(ownsUser(arr, index, message, author)){
-        message.react('✅');
+        //if (message) {message.react('✅');}
         if(dispo=='drop'){
             arr.splice(index,1);
             return "User " + user + " removed successfully.";
@@ -317,7 +335,7 @@ function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
             return "User " + user + " class changed to " + modTo + ".";
         }
     }else{
-        message.react('❌');
+        //if (message) {message.react('❌');}
         return "You are not authorized to modify " + user + ".";
     }
 }
@@ -348,7 +366,7 @@ async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
             retStr = "That user is not in this raid. Check for spelling errors and try again.";
         }
     }
-    writeRaid(raid_id, sRaid);
+    await writeRaid(raid_id, sRaid);
     return retStr;
 }
 
@@ -397,10 +415,32 @@ client.on('raw', async event => {
 	client.emit(events[event.t], reaction, user);
 });
 
-client.on('messageReactionAdd', (reaction, user) => {
+client.on('messageReactionAdd', async (reaction, user) => {
     if(user.bot) return;
+    if(reaction.message.channel.name != config.signup_list) return;
 
-	console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
+    var raid_id = await getRaidIDFromMessageID(reaction.message.id);
+    var sRaid = await getRaid(raid_id)
+    var response = "";
+    if (findIndexOfUser(sRaid.main, user.username)==-1 && findIndexOfUser(sRaid.reserves, user.username)){
+        response = await addToRaid(raid_id, sRaid, user.username, reaction.emoji.name, undefined, undefined, user.id);
+        //console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
+    }else{
+        //await message.react('🔃');
+        //await message.react('🚪');
+        if(reaction.emoji.name == '🔃'){
+
+        } else if (reaction.emoji.name = '🚪'){
+
+        }else{
+            response = await modifyRaidUser(raid_id, sRaid, user.username, reaction.message, 'class', reaction.emoji.name);
+        }
+    }
+    var raidMsg = await reaction.message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+    updateRaidMessage(raid_id, sRaid, raidMsg);
+    var m = await reaction.message.channel.send(response);
+    reaction.remove(user);
+    setTimeout(function(){m.delete()}, 7000);
 });
 
 client.on("message", async message => {
@@ -427,8 +467,8 @@ client.on("message", async message => {
         const nRaid = await createRaid(args.join(" ").split('|'), message, m.id, m.channel.id);
         var raid_id = await getId();//await storage.length() + 1);
         message.delete().catch(O_o=>{});
-        const sayMessage = getMessage(raid_id, nRaid); 
-        writeRaid(raid_id, nRaid);
+        const sayMessage = await getMessage(raid_id, nRaid); 
+        await writeRaid(raid_id, nRaid);
         await m.edit(sayMessage);
         await reactRaid(m);
     }
@@ -633,7 +673,7 @@ client.on("message", async message => {
             var promoteResponse = await promoteRaider(raid_id, sRaid, user, message);
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(raid_id, sRaid, raidMsg);
-            writeRaid(raid_id, sRaid);
+            await writeRaid(raid_id, sRaid);
             message.reply(promoteResponse);
         }
         if(command == "help"){
