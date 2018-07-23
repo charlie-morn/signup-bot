@@ -101,7 +101,7 @@ async function getMessage(activity_id, nRaid){
             + "\n**Activity ID: **" + activity_id 
             + "\n" + nRaid.description
             + "\n\nTo join this raid, react with the class icon you'd like to use below. For fill, use <:Fill:"+ config.classes["Fill"] + ">."
-            + "If you're not sure you can make it, press 🔃 to go on a tentative list. To leave this raid, press 🚪."
+            + "If you're not sure you can make it, press 🔃 to go on a tentative list (or promote yourself back). To leave this raid, press 🚪."
             + "```" + await getFormattedList(activity_id, nRaid) + "```";
 }
 
@@ -358,7 +358,7 @@ async function modifyRaidUser(activity_id, sRaid, user, message, dispo, modTo){
             + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
             + "`"+ config.prefix + "promote " + activity_id + "|";
             await messageRaiders(sRaid, message, msg, "reserve", true);
-        }else if (sRaid.main.length >= players){
+        }else if (sRaid.main.length >= players && index < 6){
             const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
             + "You have been autopromoted into the main roster."
             await message.guild.members.get(sRaid.main[players - 1].adding_user_id).send(msg);
