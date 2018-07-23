@@ -470,10 +470,10 @@ client.on("message", async message => {
       }
     const args = message.content.slice(config.prefix.length).split(/ +/g);
     const command = args.shift().toLowerCase();
-    if(config.activityType[command]) {
+    if(config.activityType[command].name) {
         const m = await message.channel.send("Preparing...");
-        const nRaid = await createActivity(args.join(" ").split('|'), config.playerCounts[command], 
-            config.activityType[command], message, m.id, m.channel.id);
+        const nRaid = await createActivity(args.join(" ").split('|'), config.activityType[command].count, 
+            config.activityType[command].name, message, m.id, m.channel.id);
         var activity_id = await getId();//await storage.length() + 1);
         message.delete().catch(O_o=>{});
         await writeRaid(activity_id, nRaid);
