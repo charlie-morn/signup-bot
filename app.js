@@ -209,6 +209,7 @@ function findIndexOfUser(userList, user){
 }
 async function addToRaid(raid_id, sRaid, user, m_cl, res, message, adding_user_id){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    var players = await getActivityPlayers(raid_id);
     if(!adding_user_id) { var adding_id = message.author.id;}
     else{ var adding_id = adding_user_id;}
     if(!message) {var adding_user = user;}
@@ -223,7 +224,7 @@ async function addToRaid(raid_id, sRaid, user, m_cl, res, message, adding_user_i
         retStr =  "I've added you to the tentative list. You will not be autopromoted.";
     }
     else{
-        if(sRaid.main.length < getActivityPlayers(raid_id)){
+        if(sRaid.main.length < players){
             sRaid.main.push({name: user, cl: m_cl, adding_user: adding_user, adding_user_id: adding_id});
             if (message) message.react('✅');
             retStr = "You're in!";
@@ -284,47 +285,51 @@ async function modifyRaidTime(raid_id, sRaid, newTime, message){
 async function deleteRaid(message){
     message.delete()
 }
-function ownsUser(arr, index, message, author){
+async function ownsUser(arr, index, message, author){
     return (message.author.username == config.botname || 
         message.author.username==arr[index].name || 
         message.author.username==arr[index].adding_user || 
         message.author.username == author);
 }
-function swapRoles(raid_id, sRaid, user, message){
+async function swapRoles(raid_id, sRaid, user, message){
     var index = findIndexOfUser(sRaid.reserves, user);
     var retStr = "";
+    var players = await getActivityPlayers(raid_id)
     if(index > -1){
-        if(ownsUser(sRaid.reserves, index, message, sRaid.author)){
-            const user_dict = sRaid.reserves[index];
-            sRaid.main.push(user_dict);
+        if(await ownsUser(sRaid.reserves, index, message, sRaid.author)){
+            sRaid.main.push(sRaid.reserves[index]);
             sRaid.reserves.splice(index, 1);
-            //message.react('✅');
-            if(sRaid.main.length > getActivityPlayers(raid_id) && index > -1){
-                //message.react('❌');
-                return "❕ This raid is full, but " + user + " has been moved to the reserves list.";
+            if(sRaid.main.length >= players){
+                retStr =  "❕ This raid is full, but " + user + " has been moved to the reserves list.";
+            }else{
+                retStr =  "✅ " + user + " has been promoted to the main roster."
             }
-            return "✅ " + user + " has been promoted to the main roster."
         }else{
-            //message.react('❌');
-            return "❌ You are not authorized to modify " + user + ".";
+            retStr =  "❌ You are not authorized to modify " + user + ".";
         }
     }else{
         index = findIndexOfUser(sRaid.main, user);
         if(index > -1){
-            if (ownsUser(sRaid.main, index, message, sRaid.author)){
-                
+            if (await ownsUser(sRaid.main, index, message, sRaid.author)){
+                sRaid.reserves.push(sRaid.main[index]);
+                sRaid.main.splice(index, 1);
+                retStr =  "✅ " + user + " has been moved to the tentative roster."
+            }else{
+                retStr =  "❌ You are not authorized to modify " + user + ".";
             }
+        }else{
+            retStr =  "❌ That user is not in the reserves list for this raid.";
         }
-        //message.react('❌');
-        return "That user is not in the reserves list for this raid.";
     }
+    await writeRaid(raid_id, sRaid);
+    return retStr;
     
 }
-function promoteRaider(raid_id, sRaid, user, message){
+async function promoteRaider(raid_id, sRaid, user, message){
     return swapRoles(raid_id, sRaid, user, message);
 }
-function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
-    if(ownsUser(arr, index, message, author)){
+async function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
+    if(await ownsUser(arr, index, message, author)){
         //if (message) {message.react('✅');}
         if(dispo=='drop'){
             arr.splice(index,1);
@@ -429,9 +434,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
         //await message.react('🔃');
         //await message.react('🚪');
         if(reaction.emoji.name == '🔃'){
-
-        } else if (reaction.emoji.name = '🚪'){
-
+            response = await swapRoles(raid_id, sRaid, user.username, reaction.message)
+        } else if (reaction.emoji.name == '🚪'){
+            response = "Not implemented."
         }else{
             response = await modifyRaidUser(raid_id, sRaid, user.username, reaction.message, 'class', reaction.emoji.name);
         }
