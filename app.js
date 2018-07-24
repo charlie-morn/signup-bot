@@ -359,7 +359,7 @@ async function modifyRaidUser(activity_id, sRaid, user, message, dispo, modTo){
             + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
             + "`"+ config.prefix + "promote " + activity_id + "|";
             await messageRaiders(sRaid, message, msg, "reserve", true);
-        }else if (sRaid.main.length >= players && index < 6){
+        }else if (dispo=='drop' ** sRaid.main.length >= players && index < 6){
             const msg = "A free space has opened in " + sRaid.author + "'s event at " + sRaid.time + ". "
             + "You have been autopromoted into the main roster. (Activity ID: " + activity_id + ")"
             await message.guild.members.get(sRaid.main[players - 1].adding_user_id).send(msg);
@@ -576,7 +576,6 @@ client.on("message", async message => {
         message.channel.bulkDelete(fetched)
           .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
       }*/
-    return;
     }
     if(message.channel.name == config.signup_here || message.channel.name == config.signup_list){
         if(message.content.indexOf(config.prefix) !== 0){
@@ -641,9 +640,10 @@ client.on("message", async message => {
             var dropResponse = await modifyRaidUser(activity_id, sRaid, user, message, 'drop');
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(activity_id, sRaid, raidMsg);
-            var rep = message.reply(dropResponse);
+            var rep = message.reply(dropResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
             setTimeout(function(){message.delete()}, 7000);
-            rep.delete()
             //}
         }
         if(command == "class"){
@@ -668,9 +668,10 @@ client.on("message", async message => {
             var changeResponse = await modifyRaidUser(activity_id, sRaid, user, message, 'class', cl);
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(activity_id, sRaid, raidMsg);
-            var rep = message.reply(changeResponse);
+            var rep = message.reply(changeResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
             setTimeout(function(){message.delete()}, 7000);
-            rep.delete()
         }
         if(command == "promote"){
             const args2 = args.join(" ").split('|');
@@ -691,12 +692,10 @@ client.on("message", async message => {
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
             updateRaidMessage(activity_id, sRaid, raidMsg);
             await writeRaid(activity_id, sRaid);
-            var rep = message.reply(promoteResponse);
+            var rep = message.reply(promoteResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
             setTimeout(function(){message.delete()}, 7000);
-            rep.delete()
-        }
-        if(command == "help"){
-            await message.reply(getSignupHereHelp());
         }
         /**if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.
