@@ -334,7 +334,7 @@ async function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
         //if (message) {message.react('✅');}
         if(dispo=='drop'){
             arr.splice(index,1);
-            return "User " + user + " removed successfully.";
+            return "User " + user + " has been removed successfully.";
         }
         if(dispo=='class'){
             arr[index].cl = modTo;
