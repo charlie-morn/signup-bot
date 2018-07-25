@@ -226,7 +226,7 @@ async function addToRaid(activity_id, sRaid, user, m_cl, res, message, adding_us
         if(sRaid.main.length < players){
             sRaid.main.push({name: user, cl: m_cl, adding_user: adding_user, adding_user_id: adding_id});
             if (message) message.react('✅');
-            retStr = user + ": You're in!";
+            retStr = user + ", you're in!";
         }else{
             sRaid.main.push({name: user, cl:m_cl, adding_user: adding_user, adding_user_id: adding_id});
             if (message) message.react('❕');
