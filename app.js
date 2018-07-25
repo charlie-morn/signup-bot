@@ -338,7 +338,7 @@ async function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
         }
         if(dispo=='class'){
             arr[index].cl = modTo;
-            return "User " + user + " class changed to " + modTo + ".";
+            return "User " + user + " has class changed to " + modTo + ".";
         }
     }else{
         //if (message) {message.react('❌');}
@@ -520,6 +520,7 @@ client.on("message", async message => {
         const args2 = args.join(" ").split('|');
 
         var activity_id = args2.shift();
+        if(activity_id){activity_id = activity_id.trim();}
         var sRaid = await getActivity(activity_id);
         if(!sRaid){
             await message.author.send("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
