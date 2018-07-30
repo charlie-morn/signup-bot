@@ -1,6 +1,21 @@
 {
-    "token": "YOUR-KEY-HERE",
+    "token": "YOUR-TOKEN-HERE",
     "prefix": "!",
+    "botname": "signup-bot-local",
     "signup_list": "signup-list",
-    "signup_here": "signup-here"
+    "signup_here": "signup-here",
+    "classes":{"Warlock": "469930718575722506",
+        "Titan":"469930702272725007",
+        "Hunter":"469930685600366622",
+        "Fill":"469930742600695808"},
+    "activityType":{
+        "raid":{"name":"Raid", "count":"6"},
+        "ep": {"name": "Escalation Protocol", "count":"9"},
+        "gambit": {"name": "PvPvE: Gambit", "count": "4"},
+        "comp": {"name": "PvP: Competitive Playlist", "count": "4"},
+        "trials": {"name": "PVP: Trials of the Nine", "count": "4"},
+        "weekly": {"name": "PvP: Weekly Playlist", "count": "6"},
+        "quickplay": {"name": "PvP: Quickplay", "count": "6"},
+        "pve": {"name": "3 person PvE", "count": "3"}
+    }
  }

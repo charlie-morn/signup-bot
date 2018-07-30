@@ -12,19 +12,78 @@ const config = require("./config.json");
 // config.prefix contains the message prefix.
 
 const storage = require('node-persist');
+const storage_lookup = require('node-persist');
 //storage holds all the raid information that the bot uses
 
-function getFormattedList(my_Raid){
+async function createActivity(args2, playerCounts, activity, message, mID, mChID){
+    const raids = args2.shift();
+    if(!raids){
+        message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
+        message.delete().catch(O_o=>{});
+        return;
+    }
+        //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
+    const time = args2.shift();
+    if(!time){
+        message.author.send("Sorry, I couldn't create this raid because you haven't specified a time or description. Please re-read the pinned syntax for creating raids and resbumit.")
+        message.delete().catch(O_o=>{});
+        return;
+    }
+    const desc = args2.shift();
+    if(!desc){
+        message.author.send("Sorry, I couldn't create this raid because you haven't specified a description. Please re-read the pinned syntax for creating raids and resbumit.")
+        message.delete().catch(O_o=>{});
+        return;
+    }
+    var m_cl = args2.shift();
+    if(!m_cl){
+        m_cl = 'Fill';
+    }
+    
+    var nRaid = {
+        title: raids,
+        description: desc,
+        main: [{name: message.author.username, cl: m_cl, adding_user_id: message.author.id}],
+        reserves: [],
+        time: time,
+        author: message.author.username,
+        message_id: mID,
+        channel_id: mChID,
+        author_id: message.author.id,
+        players: playerCounts,
+        activityType: activity
+        };
+    //message.edit(sayMessage);
+    return nRaid;
+}
+
+async function getActivityPlayers(activity_id){
+    mRaid = await getActivity(activity_id)
+    if(mRaid){
+        if(mRaid.players) return parseInt(mRaid.players);
+        else return 6;
+    }
+    else{ return 6;}
+}
+
+async function getFormattedList(activity_id, my_Raid){
     var ret = "====ROSTER====\n";
-    for (var i = 0; i<6; i++){
+    var players = await getActivityPlayers(activity_id)
+    for (var i = 0; i<players; i++){
         if(!my_Raid.main[i]){
             ret += String(i+1) + '. OPEN \n';
         }else{
             ret += String(i+1) + '. ' + my_Raid.main[i].name + ' - ' + my_Raid.main[i].cl + '\n';
         }
     }
-    ret += "====RESERVES==== \n"
-    for (var i = 0; i<Math.max(my_Raid.reserves.length, 2); i++){
+    if(my_Raid.main.length > players){
+        ret += "====RESERVES - WILL AUTOPROMOTE IF SPACE OPENS====\n"
+        for (var i=players; i< my_Raid.main.length; i++){
+            ret += String(i+1 - players) + '. ' + my_Raid.main[i].name + ' - ' + my_Raid.main[i].cl + '\n';
+        }
+    }
+    ret += "====TENTATITVE - WILL NOT AUTOPROMOTE==== \n"
+    for (var i = 0; i<Math.max(my_Raid.reserves.length, 1); i++){
         if(!my_Raid.reserves[i]){
             ret += String(i+1) + '. OPEN \n';
         }else{
@@ -35,17 +94,15 @@ function getFormattedList(my_Raid){
     return ret;
 }
 
-function getMessage(raid_id, nRaid){
-    return "**" + nRaid.title + "** \n**Time:** " + nRaid.time
+async function getMessage(activity_id, nRaid){
+    return "**__" + nRaid.activityType + ":__ " + nRaid.title 
+            + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
-            + "\n**Bot Raid ID: **" + raid_id 
+            + "\n**Activity ID: **" + activity_id 
             + "\n" + nRaid.description
-            + "\n\nTo join this raid, reply in #" + config.signup_here + " with the command `"+ config.prefix +"join " + raid_id + "(|Class|Reserve|Name)`" + " \n"
-            + "For example: `"+ config.prefix +"join " + raid_id + "|Hunter" + "` would join me to the main roster, and `"+ config.prefix +"join " + raid_id 
-            + "|Fill|reserve` would have me be a reserve fill. Lastly, `+join " + raid_id + "|Titan||signup-bot-evil-twin` would add my evil twin to the raid.\n"
-            + "```" + getFormattedList(nRaid) + "```"
-            + "\n ."
-            + "\n .";
+            + "\n\nTo join this raid, react with the class icon you'd like to use below. For fill, use <:Fill:"+ config.classes["Fill"] + ">."
+            + "If you're not sure you can make it, press 🔃 after joining to go on the tentative list (or promote yourself back when you're sure). To leave this raid, press 🚪."
+            + "```" + await getFormattedList(activity_id, nRaid) + "```";
 }
 
 async function getId(){
@@ -64,7 +121,15 @@ async function getId(){
     return String(await storage.length() + 1); // yourname
 }
 
-async function writeRaid(raid_id, nRaid){
+async function reactRaid(message){
+    for (var key in config.classes) {
+        await message.react(config.classes[key]);
+    }
+    await message.react('🔃');
+    await message.react('🚪');
+}
+
+async function writeRaid(activity_id, nRaid){
     //Writes the raid to persistent storage.
     await storage.init({
         dir: 'raid_store',
@@ -78,10 +143,25 @@ async function writeRaid(raid_id, nRaid){
         // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
         forgiveParseErrors: false
     });
-    await storage.setItem(raid_id, nRaid);
+    await storage.setItem(activity_id, nRaid);
+
+    await storage_lookup.init({
+        dir: 'message_raid_map',
+        stringify: JSON.stringify,
+        parse: JSON.parse,
+        encoding: 'utf8',
+        logging: false,  // can also be custom logging function
+        ttl: false, // ttl* [NEW], can be true for 24h default or a number in MILLISECONDS
+        expiredInterval: 2 * 60 * 1000, // every 2 minutes the process will clean-up the expired cache
+        // in some cases, you (or some other service) might add non-valid storage files to your
+        // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
+        forgiveParseErrors: false
+    });
+    await storage_lookup.setItem(nRaid.message_id, activity_id);
+
 }
 
-async function getRaid(raid_id){
+async function getActivity(activity_id){
     //Reads the raid from persistent storage.
     await storage.init({
         dir: 'raid_store',
@@ -95,10 +175,26 @@ async function getRaid(raid_id){
         // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
         forgiveParseErrors: false
     });
-    return await storage.getItem(raid_id)
+    return await storage.getItem(activity_id)
 }
-async function updateRaidMessage(raid_id, sRaid, message){
-    const sayMessage = getMessage(raid_id, sRaid); 
+async function getActivityIDFromMessageID(message_id){
+    //Reads the raid from persistent storage.
+    await storage_lookup.init({
+        dir: 'message_raid_map',
+        stringify: JSON.stringify,
+        parse: JSON.parse,
+        encoding: 'utf8',
+        logging: false,  // can also be custom logging function
+        ttl: false, // ttl* [NEW], can be true for 24h default or a number in MILLISECONDS
+        expiredInterval: 2 * 60 * 1000, // every 2 minutes the process will clean-up the expired cache
+        // in some cases, you (or some other service) might add non-valid storage files to your
+        // storage dir, i.e. Google Drive, make this true if you'd like to ignore these files and not throw an error
+        forgiveParseErrors: false
+    });
+    return await storage_lookup.getItem(message_id)
+}
+async function updateRaidMessage(activity_id, sRaid, message){
+    const sayMessage = await getMessage(activity_id, sRaid); 
     message.edit(sayMessage);
     //client.TextChannel.fetchMessage(sRaid.message_id)
     //    .then(message => message.edit(sayMessage));
@@ -111,34 +207,39 @@ function findIndexOfUser(userList, user){
     }
     return -1;
 }
-async function addToRaid(raid_id, sRaid, user, m_cl, res, message){
+async function addToRaid(activity_id, sRaid, user, m_cl, res, message, adding_user_id){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    var players = await getActivityPlayers(activity_id);
+    if(!adding_user_id) { var adding_id = message.author.id;}
+    else{ var adding_id = adding_user_id;}
+    if(!message) {var adding_user = user;}
+    else{ var adding_user = message.author.username; }
     if(findIndexOfUser(sRaid.main, user) != -1 || findIndexOfUser(sRaid.reserves, user) != -1){
-        return "You are already in this raid, please use `"+config.prefix+"class`  to change classes, or `" + config.prefix + "promote`"
-            + " to promote to the main roster."
+        return "You are already in this raid, please use the icons to change classes, or the 🔃 button to swap to/from the tentative roster."
     }
     if(res){
-        sRaid.reserves.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
-        message.react('✅');
-        retStr =  "I've added you to the reserve list.";
+        sRaid.reserves.push({name: user, cl: m_cl, adding_user: adding_user, adding_user_id: adding_id});
+        if (message) message.react('✅');
+        retStr =  "I've added " + user + " to the tentative list. You will not be autopromoted.";
     }
     else{
-        if(sRaid.main.length < 6){
-            sRaid.main.push({name: user, cl: m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
-            message.react('✅');
-            retStr = "You're in!";
+        if(sRaid.main.length < players){
+            sRaid.main.push({name: user, cl: m_cl, adding_user: adding_user, adding_user_id: adding_id});
+            if (message) message.react('✅');
+            retStr = user + ", you're in!";
         }else{
-            sRaid.reserves.push({name: user, cl:m_cl, adding_user: message.author.username, adding_user_id: message.author.id});
-            message.react('❕');
-            retStr = "List was full, but you have been added to reserves.";
+            sRaid.main.push({name: user, cl:m_cl, adding_user: adding_user, adding_user_id: adding_id});
+            if (message) message.react('❕');
+            retStr = "List was full, but " + user + " has been added to reserves. You will be autopromoted if space opens.";
         }
     }
-    writeRaid(raid_id, sRaid);
+    await writeRaid(activity_id, sRaid);
     return retStr;
 }
 function getSignupListHelp(){
     var ret = "The commands you can issue here include `+raid`, `+time`, `+delete` and the variants of `+message`.\n"
     ret += "To create a raid, use the syntax `+raid Title | Date | Description (| Class)`. (Note that the parentheses shouldn't be included, they are to designate optional arguments)."
+    ret += "\nOther activities you can create are: ep, gambit, trials, comp, weekly (pvp), quickplay, pve"
     ret += "\nFor more help related to the #signup-list channel, please go to https://github.com/cliffhanger407/signup-bot#things-you-can-do-in-signup-list";
     return ret;
 }
@@ -172,11 +273,11 @@ async function messageRaiders(sRaid, message, text, group, endWithUser){
 function ownsRaid(sender, sRaid){
     return (sRaid.author_id == sender);
 }
-async function modifyRaidTime(raid_id, sRaid, newTime, message){
+async function modifyRaidTime(activity_id, sRaid, newTime, message){
     if(ownsRaid(message.author.id, sRaid)){
         const oldTime = sRaid.time;
         sRaid.time = newTime;
-        writeRaid(raid_id, sRaid);
+        await writeRaid(activity_id, sRaid);
         return [0, sRaid.author + "'s raid " + sRaid.title + " has moved from " + oldTime + " to " + newTime + "."];
     }
     return [1, "You are not authorized to modify " + sRaid.author + "'s raid."]
@@ -184,60 +285,84 @@ async function modifyRaidTime(raid_id, sRaid, newTime, message){
 async function deleteRaid(message){
     message.delete()
 }
-function ownsUser(arr, index, message, author){
-    return (message.author.username==arr[index].name || message.author.username==arr[index].adding_user || message.author.username == author);
+async function ownsUser(arr, index, message, author){
+    return (message.author.username == config.botname || 
+        message.author.username==arr[index].name || 
+        message.author.username==arr[index].adding_user || 
+        message.author.username == author);
 }
-function promoteRaider(raid_id, sRaid, user, message){
-    const index = findIndexOfUser(sRaid.reserves, user)
-    if(sRaid.main.length > 5 && index > -1){
-        message.react('❌');
-        return "That raid is full, cannot promote.";
-    }else if(index > -1){
-        if(ownsUser(sRaid.reserves, index, message, sRaid.author)){
-            const user_dict = sRaid.reserves[index];
-            sRaid.main.push(user_dict);
+async function swapRoles(activity_id, sRaid, user, message){
+    var index = findIndexOfUser(sRaid.reserves, user);
+    var retStr = "";
+    var players = await getActivityPlayers(activity_id)
+    if(index > -1){
+        if(await ownsUser(sRaid.reserves, index, message, sRaid.author)){
+            sRaid.main.push(sRaid.reserves[index]);
             sRaid.reserves.splice(index, 1);
-            message.react('✅');
-            return user + " has been promoted to the main roster."
+            if(sRaid.main.length >= players){
+                retStr =  "❕ This raid is full, but " + user + " has been moved to the reserves list.";
+            }else{
+                retStr =  "✅ " + user + " has been promoted to the main roster."
+            }
         }else{
-            message.react('❌');
-            return "You are not authorized to modify " + user + ".";
+            retStr =  "❌ You are not authorized to modify " + user + ".";
         }
     }else{
-        message.react('❌');
-        return "That user is not in the reserves list for this raid.";
+        index = findIndexOfUser(sRaid.main, user);
+        if(index > -1){
+            if (await ownsUser(sRaid.main, index, message, sRaid.author)){
+                sRaid.reserves.push(sRaid.main[index]);
+                sRaid.main.splice(index, 1);
+                retStr =  "✅ " + user + " has been moved to the tentative roster."
+            }else{
+                retStr =  "❌ You are not authorized to modify " + user + ".";
+            }
+        }else{
+            retStr =  "❌ " + user + " is not in the reserves list for this raid.";
+        }
     }
+    await writeRaid(activity_id, sRaid);
+    return retStr;
     
 }
-function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
-    if(ownsUser(arr, index, message, author)){
-        message.react('✅');
+async function promoteRaider(activity_id, sRaid, user, message){
+    return swapRoles(activity_id, sRaid, user, message);
+}
+async function modifyUserIndex(arr, index, user, message, author, dispo, modTo){
+    var ou = await ownsUser(arr, index, message, author);
+    if(ou){
+        //if (message) {message.react('✅');}
         if(dispo=='drop'){
             arr.splice(index,1);
-            return "User " + user + " removed successfully.";
+            return "User " + user + " has been removed successfully.";
         }
         if(dispo=='class'){
             arr[index].cl = modTo;
-            return "User " + user + " class changed to " + modTo + ".";
+            return "User " + user + " has class changed to " + modTo + ".";
         }
     }else{
-        message.react('❌');
+        //if (message) {message.react('❌');}
         return "You are not authorized to modify " + user + ".";
     }
 }
-async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
+async function modifyRaidUser(activity_id, sRaid, user, message, dispo, modTo){
     var retStr = "I've encountered some sort of strange exception. Try again maybe? But also maybe not. I'm not sure. This should never happen.";
+    var players = await getActivityPlayers(activity_id)
     if(!user){
         user = message.author.username;
     }
     var index = findIndexOfUser(sRaid.main, user);
     if(index >= 0){
-        retStr = modifyUserIndex(sRaid.main, index, user, message, sRaid.author, dispo, modTo);
-        if(dispo=='drop' && retStr.startsWith("User") && sRaid.main.length == 5){
+        retStr = await modifyUserIndex(sRaid.main, index, user, message, sRaid.author, dispo, modTo);
+        if(dispo=='drop' && retStr.startsWith("User") && sRaid.main.length == players - 1){
             const msg = "A free space has opened in " + sRaid.author + "'s raid at " + sRaid.time + ". "
             + "If you would like to join, please go to #" + config.signup_here + " and issue the command: \n"
-            + "`"+ config.prefix + "promote " + raid_id + "|";
+            + "`"+ config.prefix + "promote " + activity_id + "|";
             await messageRaiders(sRaid, message, msg, "reserve", true);
+        }else if (dispo=='drop' ** sRaid.main.length >= players && index < 6){
+            const msg = "A free space has opened in " + sRaid.author + "'s event at " + sRaid.time + ". "
+            + "You have been autopromoted into the main roster. (Activity ID: " + activity_id + ")"
+            await message.guild.members.get(sRaid.main[players - 1].adding_user_id).send(msg);
         }
     }else{
         index = findIndexOfUser(sRaid.reserves, user);
@@ -248,7 +373,7 @@ async function modifyRaidUser(raid_id, sRaid, user, message, dispo, modTo){
             retStr = "That user is not in this raid. Check for spelling errors and try again.";
         }
     }
-    writeRaid(raid_id, sRaid);
+    await writeRaid(activity_id, sRaid);
     return retStr;
 }
 
@@ -276,6 +401,56 @@ client.on("guildDelete", guild => {
   client.user.setActivity(`For help go to https://goo.gl/QLSNVU`);
 });
 
+const events = {
+	MESSAGE_REACTION_ADD: 'messageReactionAdd',
+	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
+};
+
+client.on('raw', async event => {
+	if (!events.hasOwnProperty(event.t)) return;
+
+	const { d: data } = event;
+	const user = client.users.get(data.user_id);
+	const channel = client.channels.get(data.channel_id) || await user.createDM();
+
+	if (channel.messages.has(data.message_id)) return;
+
+	const message = await channel.fetchMessage(data.message_id);
+	const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
+	const reaction = message.reactions.get(emojiKey);
+
+	client.emit(events[event.t], reaction, user);
+});
+
+client.on('messageReactionAdd', async (reaction, user) => {
+    if(user.bot) return;
+    if(reaction.message.channel.name != config.signup_list) return;
+
+    var activity_id = await getActivityIDFromMessageID(reaction.message.id);
+    var sRaid = await getActivity(activity_id)
+    var response = "";
+    if (findIndexOfUser(sRaid.main, user.username)==-1 
+        && findIndexOfUser(sRaid.reserves, user.username)==-1 
+        && config.classes[reaction.emoji.name]){
+        response = await addToRaid(activity_id, sRaid, user.username, reaction.emoji.name, undefined, undefined, user.id);
+        //console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
+    }else{
+        //await message.react('🔃');
+        //await message.react('🚪');
+        if(reaction.emoji.name == '🔃'){
+            response = await swapRoles(activity_id, sRaid, user.username, reaction.message)
+        } else if (reaction.emoji.name == '🚪'){
+            response = await modifyRaidUser(activity_id, sRaid, user.username, reaction.message, 'drop', reaction.emoji.name);
+        }else{
+            response = await modifyRaidUser(activity_id, sRaid, user.username, reaction.message, 'class', reaction.emoji.name);
+        }
+    }
+    var raidMsg = await reaction.message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+    updateRaidMessage(activity_id, sRaid, raidMsg);
+    var m = await reaction.message.channel.send(response);
+    reaction.remove(user);
+    setTimeout(function(){m.delete()}, 7000);
+});
 
 client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
@@ -287,7 +462,7 @@ client.on("message", async message => {
   // Also good practice to ignore any message that does not start with our prefix, 
   // which is set in the configuration file.
   
-  if(message.channel.name === config.signup_list){
+    if(message.channel.name == config.signup_list){
     if(message.content.indexOf(config.prefix) !== 0){
           //Commenting these to allow for other messages to be posted.
           //message.author.send("You have posted an invalid response. Please try again.")
@@ -296,64 +471,25 @@ client.on("message", async message => {
       }
     const args = message.content.slice(config.prefix.length).split(/ +/g);
     const command = args.shift().toLowerCase();
-    if(command === "raid") {
-        //The syntax for creating a new raid is:
-        //+raid Raid Name, 5/21 8:00 PST, (Description, Class)
-        const args2 = args.join(" ").split('|');
-
-        const raids = args2.shift();
-        if(!raids){
-            message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
-            message.delete().catch(O_o=>{});
-            return;
-        }
-            //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
-        const time = args2.shift();
-        if(!time){
-            message.author.send("Sorry, I couldn't create this raid because you haven't specified a time or description. Please re-read the pinned syntax for creating raids and resbumit.")
-            message.delete().catch(O_o=>{});
-            return;
-        }
-        const desc = args2.shift();
-        if(!desc){
-            message.author.send("Sorry, I couldn't create this raid because you haven't specified a description. Please re-read the pinned syntax for creating raids and resbumit.")
-            message.delete().catch(O_o=>{});
-            return;
-        }
-        var m_cl = args2.shift();
-        if(!m_cl){
-            m_cl = 'Fill';
-        }
+    if(config.activityType[command]) {
         const m = await message.channel.send("Preparing...");
-        const msg_id = m.id;
-
-        var raid_id = await getId();//await storage.length() + 1);
-        
-        var nRaid = {
-            title: raids,
-            description: desc,
-            main: [{name: message.author.username, cl: m_cl, adding_user_id: message.author.id}],
-            reserves: [],
-            time: time,
-            author: message.author.username,
-            message_id: msg_id,
-            channel_id: m.channel.id,
-            author_id: message.author.id
-          };
-        //message.edit(sayMessage);
+        const nRaid = await createActivity(args.join(" ").split('|'), config.activityType[command].count, 
+            config.activityType[command].name, message, m.id, m.channel.id);
+        var activity_id = await getId();//await storage.length() + 1);
         message.delete().catch(O_o=>{});
-        const sayMessage = getMessage(raid_id, nRaid); 
-        writeRaid(raid_id, nRaid);
-        m.edit(sayMessage);
+        await writeRaid(activity_id, nRaid);
+        const sayMessage = await getMessage(activity_id, nRaid); 
+        await m.edit(sayMessage);
+        await reactRaid(m);
     }
     if(command == "time"){
         const args2 = args.join(" ").split('|');
 
-        var raid_id = args2.shift();
-        if(raid_id){raid_id = raid_id.trim();}
-        var sRaid = await getRaid(raid_id);
+        var activity_id = args2.shift();
+        if(activity_id){activity_id = activity_id.trim();}
+        var sRaid = await getActivity(activity_id);
         if(!sRaid){
-            message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            message.reply("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
             return;
         };
         var newTime = args2.shift();
@@ -365,11 +501,11 @@ client.on("message", async message => {
         var text = args2.shift();
         if(text){text = text.trim();}
         else{text = "";}
-        const newTimeMessage = await modifyRaidTime(raid_id, sRaid, newTime, message);
+        const newTimeMessage = await modifyRaidTime(activity_id, sRaid, newTime, message);
         if(newTimeMessage[0] == 0){
             await messageRaiders(sRaid, message, newTimeMessage[1] + " " + text, "all");
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
-            updateRaidMessage(raid_id, sRaid, raidMsg);
+            updateRaidMessage(activity_id, sRaid, raidMsg);
             message.delete().catch(O_o=>{});
             return;
         }
@@ -383,10 +519,11 @@ client.on("message", async message => {
         || command == "delete"){
         const args2 = args.join(" ").split('|');
 
-        var raid_id = args2.shift();
-        var sRaid = await getRaid(raid_id);
+        var activity_id = args2.shift();
+        if(activity_id){activity_id = activity_id.trim();}
+        var sRaid = await getActivity(activity_id);
         if(!sRaid){
-            await message.author.send("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+            await message.author.send("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
             message.delete().catch(O_o=>{});
             return;
         };
@@ -440,9 +577,8 @@ client.on("message", async message => {
         message.channel.bulkDelete(fetched)
           .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
       }*/
-    return;
     }
-    if(message.channel.name === config.signup_here){
+    if(message.channel.name == config.signup_here || message.channel.name == config.signup_list){
         if(message.content.indexOf(config.prefix) !== 0){
             //Commenting these to allow for other messages to be posted. This ignores input that does not begin with our prefix.
             //message.author.send("You have posted an invalid response. Please try again.")
@@ -454,12 +590,12 @@ client.on("message", async message => {
 
         if(command == "join" || command == "add"){
             const args2 = args.join(" ").split('|');
-            var raid_id = args2.shift();
-            if(!raid_id){
+            var activity_id = args2.shift();
+            if(!activity_id){
                 message.reply("Sorry, I can't add you unless you tell me a title you want. Please check the syntax for this function and resubmit.")
                 return;
             }
-            raid_id = raid_id.trim();
+            activity_id = activity_id.trim();
             var cl = args2.shift();
             if(cl){cl = cl.trim();}
             if(!cl){cl = 'Fill';}
@@ -470,48 +606,54 @@ client.on("message", async message => {
             if(user){user = user.trim();}
             if(!user){user = message.author.username;}
             
-            var sRaid = await getRaid(raid_id);
+            var sRaid = await getActivity(activity_id);
             if(!sRaid){
-                message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+                message.reply("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
                 return;
             };
-            var addResponse = await addToRaid(raid_id, sRaid, user, cl, res, message);
+            var addResponse = await addToRaid(activity_id, sRaid, user, cl, res, message);
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
-            updateRaidMessage(raid_id, sRaid, raidMsg);
-            return message.reply(addResponse);
+            updateRaidMessage(activity_id, sRaid, raidMsg);
+            var rep = message.reply(addResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
+            setTimeout(function(){message.delete()}, 7000);
         }
         if(command == "drop" || command == "kick" || command =="getfucked" || command == "leave"){
             const args2 = args.join(" ").split('|');
-            var raid_id = args2.shift();
-            if(!raid_id){
+            var activity_id = args2.shift();
+            if(!activity_id){
                 return message.reply("Sorry, I can't drop you unless you tell me which raid you want out of. Please check the syntax for this function and resubmit.");
             }
-            raid_id = raid_id.trim();
+            activity_id = activity_id.trim();
 
             var user = args2.shift();
             if(user){user = user.trim();}
             if(!user){user = message.author.username;}
 
-            var sRaid = await getRaid(raid_id);
+            var sRaid = await getActivity(activity_id);
             if(!sRaid){
-                return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+                return message.reply("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
             };
             //if(user == sRaid.author && user == message.author.username){
             //    return message.reply("You can't use this command to leave your own raid. You must cancel it separately. (This functionality not yet implemented).")
             //} else {
-            var dropResponse = await modifyRaidUser(raid_id, sRaid, user, message, 'drop');
+            var dropResponse = await modifyRaidUser(activity_id, sRaid, user, message, 'drop');
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
-            updateRaidMessage(raid_id, sRaid, raidMsg);
-            message.reply(dropResponse);
+            updateRaidMessage(activity_id, sRaid, raidMsg);
+            var rep = message.reply(dropResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
+            setTimeout(function(){message.delete()}, 7000);
             //}
         }
         if(command == "class"){
             const args2 = args.join(" ").split('|');
-            var raid_id = args2.shift();
-            if(!raid_id){
+            var activity_id = args2.shift();
+            if(!activity_id){
                 return message.reply("Sorry, I can't change your class unless you tell me which raid. Please check the syntax for this function and resubmit.");
             }
-            raid_id = raid_id.trim()
+            activity_id = activity_id.trim()
             var cl = args2.shift();
             if(cl){cl = cl.trim();}
             if(!cl){cl = 'Fill';}
@@ -520,38 +662,41 @@ client.on("message", async message => {
             if(user){user = user.trim();}
             if(!user){user = message.author.username;}
 
-            var sRaid = await getRaid(raid_id);
+            var sRaid = await getActivity(activity_id);
             if(!sRaid){
-                return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+                return message.reply("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
             };
-            var changeResponse = await modifyRaidUser(raid_id, sRaid, user, message, 'class', cl);
+            var changeResponse = await modifyRaidUser(activity_id, sRaid, user, message, 'class', cl);
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
-            updateRaidMessage(raid_id, sRaid, raidMsg);
-            message.reply(changeResponse);
+            updateRaidMessage(activity_id, sRaid, raidMsg);
+            var rep = message.reply(changeResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
+            setTimeout(function(){message.delete()}, 7000);
         }
         if(command == "promote"){
             const args2 = args.join(" ").split('|');
-            var raid_id = args2.shift();
-            if(!raid_id){
+            var activity_id = args2.shift();
+            if(!activity_id){
                 return message.reply("Sorry, I can't change your class unless you tell me which raid. Please check the syntax for this function and resubmit.");
             }
-            raid_id = raid_id.trim();
+            activity_id = activity_id.trim();
             var user = args2.shift();
             if(user){user = user.trim();}
             if(!user){user = message.author.username;}
 
-            var sRaid = await getRaid(raid_id);
+            var sRaid = await getActivity(activity_id);
             if(!sRaid){
-                return message.reply("Sorry, I couldn't find a raid with ID " + raid_id + ". Please try again and resubmit.");
+                return message.reply("Sorry, I couldn't find an activity with ID " + activity_id + ". Please try again and resubmit.");
             };
-            var promoteResponse = await promoteRaider(raid_id, sRaid, user, message);
+            var promoteResponse = await promoteRaider(activity_id, sRaid, user, message);
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
-            updateRaidMessage(raid_id, sRaid, raidMsg);
-            writeRaid(raid_id, sRaid);
-            message.reply(promoteResponse);
-        }
-        if(command == "help"){
-            await message.reply(getSignupHereHelp());
+            updateRaidMessage(activity_id, sRaid, raidMsg);
+            await writeRaid(activity_id, sRaid);
+            var rep = message.reply(promoteResponse)
+                .then(sent => setTimeout(function(){sent.delete()}, 7000))
+                .catch(console.error);
+            setTimeout(function(){message.delete()}, 7000);
         }
         /**if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.
@@ -571,5 +716,7 @@ client.on("message", async message => {
           return;
     }
 });
+
+process.on('unhandledRejection', err => console.error(`Uncaught Promise Rejection: \n${err.stack}`));
 
 client.login(config.token);
