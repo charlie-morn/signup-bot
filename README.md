@@ -60,8 +60,7 @@ and that would produce the below output:
 **Posted by:** cliffhanger407  
 Let's set up a sherpa run, join in @spacepup!
 
-To join this raid, reply in #signup-here with the command `+join 5(|Class|Reserve|Name) `
-For example: `+join 5|Hunter` would join me to the main roster, and `+join 5|Fill|reserve` would have me be a reserve fill. Lastly, `+join 5|Titan||signup-bot-evil-twin` would add my evil twin to the raid.
+To join this raid, react with the class icon you'd like to use below. For fill, use :Fill~2:.If you're not sure you can make it, press 🔃 after joining to go on the tentative list (or promote yourself back when you're sure). To leave this raid, press 🚪.
 
 ```====ROSTER====
 1. cliffhanger407 - Fill
@@ -88,8 +87,7 @@ would produce the output:
 **Posted by:** cliffhanger407  
 I need a clear for my Titan
 
-To join this raid, reply in #signup-here with the command `+join 5(|Class|Reserve|Name) `
-For example: `+join 5|Hunter` would join me to the main roster, and `+join 5|Fill|reserve` would have me be a reserve fill. Lastly, `+join 5|Titan||signup-bot-evil-twin` would add my evil twin to the raid.
+To join this raid, react with the class icon you'd like to use below. For fill, use :Fill~2:.If you're not sure you can make it, press 🔃 after joining to go on the tentative list (or promote yourself back when you're sure). To leave this raid, press 🚪.
 
 ```
 ====ROSTER====
@@ -105,6 +103,17 @@ For example: `+join 5|Hunter` would join me to the main roster, and `+join 5|Fil
 ```
 
 The bot takes care of all the formatting and signups for you!
+
+The list of activities that can be created are:
+```
++raid : Raid - players : 6
++ep : Escalation Protocol - players : 9
++comp : PvP: Competitive Playlist - players : 4
++trials : PVP: Trials of the Nine - players : 4
++weekly : PvP: Weekly Playlist - players : 6
++quickplay : PvP: Quickplay - players : 6
++pve : 3 person PvE - players: 3
+```
 
 ### time
 Use the `+time` command with syntax:
