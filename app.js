@@ -683,7 +683,7 @@ client.on("message", async message => {
             return;
         }
         if(!message.member.roles.some(r=>["Admin", "admin", "Clan Leader", "Skynet"].includes(r.name)) ){
-            await message.author.send(getSignupListHelp());
+            await message.author.send("Only bot commands can be issued in this channel. The output of the +help command follows: " + getSignupListHelp());
             //console.log(message.member.roles)
             var rep = message.reply("That message does not meet the requirements for this channel. Only bot commands may be issued. A help message has been sent to you via DM.")
                 .then(sent => setTimeout(function(){sent.delete()}, 7000))
