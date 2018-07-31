@@ -83,7 +83,7 @@ async function getFormattedList(activity_id, my_Raid){
             ret += String(i+1 - players) + '. ' + my_Raid.main[i].name + ' - ' + my_Raid.main[i].cl + '\n';
         }
     }
-    ret += "====TENTATITVE - WILL NOT AUTOPROMOTE==== \n"
+    ret += "====TENTATIVE - WILL NOT AUTOPROMOTE==== \n"
     for (var i = 0; i<Math.max(my_Raid.reserves.length, 1); i++){
         if(!my_Raid.reserves[i]){
             ret += String(i+1) + '. OPEN \n';
