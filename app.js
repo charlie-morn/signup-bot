@@ -1,12 +1,12 @@
 // Load up the discord.js library
 const Discord = require("discord.js");
 
-// This is your client. Some people call it `bot`, some people call it `self`, 
+// This is your client. Some people call it `bot`, some people call it `self`,
 // some might call it `cootchie`. Either way, when you see `client.something`, or `bot.something`,
 // this is what we're refering to. Your client.
 const client = new Discord.Client();
 
-// Here we load the config.json file that contains our token and our prefix values. 
+// Here we load the config.json file that contains our token and our prefix values.
 const config = require("./config.json");
 // config.token contains the bot's token
 // config.prefix contains the message prefix.
@@ -40,7 +40,7 @@ async function createActivity(args2, playerCounts, activity, message, mID, mChID
     if(!m_cl){
         m_cl = 'Fill';
     }
-    
+
     var nRaid = {
         title: raids,
         description: desc,
@@ -96,10 +96,10 @@ async function getFormattedList(activity_id, my_Raid){
 }
 
 async function getMessage(activity_id, nRaid){
-    return "**__" + nRaid.activityType + ":__ " + nRaid.title 
+    return "**__" + nRaid.activityType + ":__ " + nRaid.title
             + "** \n**Time:** " + nRaid.time
             + "\n**Posted by:** " + nRaid.author
-            + "\n**Activity ID: **" + activity_id 
+            + "\n**Activity ID: **" + activity_id
             + "\n" + nRaid.description
             + "\n\nTo join this raid, react with the class icon you'd like to use below. For fill, use <:Fill:"+ config.classes["Fill"] + ">."
             + "If you're not sure you can make it, press 🔃 after joining to go on the tentative list (or promote yourself back when you're sure). To leave this raid, press 🚪."
@@ -195,7 +195,7 @@ async function getActivityIDFromMessageID(message_id){
     return await storage_lookup.getItem(message_id)
 }
 async function updateRaidMessage(activity_id, sRaid, message){
-    const sayMessage = await getMessage(activity_id, sRaid); 
+    const sayMessage = await getMessage(activity_id, sRaid);
     message.edit(sayMessage);
     //client.TextChannel.fetchMessage(sRaid.message_id)
     //    .then(message => message.edit(sayMessage));
@@ -279,6 +279,8 @@ async function modifyRaidTime(activity_id, sRaid, newTime, message){
         const oldTime = sRaid.time;
         sRaid.time = newTime;
         await writeRaid(activity_id, sRaid);
+        clearTimeout(sRaid.deletionTimer);
+        sRaid.deletionTimer = setTimeout(function(){deleteRaidAndMessage(sRaid, sent), sRaid.time - Date.getTime()});
         return [0, sRaid.author + "'s raid " + sRaid.title + " has moved from " + oldTime + " to " + newTime + "."];
     }
     return [1, "You are not authorized to modify " + sRaid.author + "'s raid."]
@@ -286,12 +288,16 @@ async function modifyRaidTime(activity_id, sRaid, newTime, message){
 async function deleteRaid(message){
     message.delete()
 }
+async function deleteRaidAndMessage(sRaid, raidMsg){
+    deleteRaid(sRaid);
+    raidMsg.delete().catch(O_o=>{});
+}
 async function ownsUser(arr, index, message, author){
-    return (message.author.username == config.botname || 
-        message.author.username==arr[index].name || 
-        message.author.username==arr[index].adding_user || 
+    return (message.author.username == config.botname ||
+        message.author.username==arr[index].name ||
+        message.author.username==arr[index].adding_user ||
         message.author.username == author ||
-        message.member.roles.some(r=>["Admin", "admin", "Clan Leader", "Skynet"].includes(r.name)) 
+        message.member.roles.some(r=>["Admin", "admin", "Clan Leader", "Skynet"].includes(r.name))
     );
 }
 async function swapRoles(activity_id, sRaid, user, message){
@@ -326,7 +332,7 @@ async function swapRoles(activity_id, sRaid, user, message){
     }
     await writeRaid(activity_id, sRaid);
     return retStr;
-    
+
 }
 async function promoteRaider(activity_id, sRaid, user, message){
     return swapRoles(activity_id, sRaid, user, message);
@@ -382,7 +388,7 @@ async function modifyRaidUser(activity_id, sRaid, user, message, dispo, modTo){
 
 client.on("ready", () => {
   // This event will run if the bot starts, and logs in, successfully.
-  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`); 
+  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
   // Example of changing the bot's playing game to something useful. `client.user` is what the
   // docs refer to as the "ClientUser".
   client.user.setActivity(`For help go to https://goo.gl/QLSNVU`);
@@ -432,8 +438,8 @@ client.on('messageReactionAdd', async (reaction, user) => {
     console.log(Date.now() + ": " + user.username + " - " + reaction.emoji.name + " on " + activity_id)
     var sRaid = await getActivity(activity_id)
     var response = "";
-    if (findIndexOfUser(sRaid.main, user.username)==-1 
-        && findIndexOfUser(sRaid.reserves, user.username)==-1 
+    if (findIndexOfUser(sRaid.main, user.username)==-1
+        && findIndexOfUser(sRaid.reserves, user.username)==-1
         && config.classes[reaction.emoji.name]){
         response = await addToRaid(activity_id, sRaid, user.username, reaction.emoji.name, undefined, undefined, user.id);
         //console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
@@ -457,14 +463,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 client.on("message", async message => {
   // This event will run on every single message received, from any channel or DM.
-  
+
   // It's good practice to ignore other bots. This also makes your bot ignore itself
   // and not get into a spam loop (we call that "botception").
   if(message.author.bot) return;
-  
-  // Also good practice to ignore any message that does not start with our prefix, 
+
+  // Also good practice to ignore any message that does not start with our prefix,
   // which is set in the configuration file.
-  
+
     if(message.channel.name == config.signup_list){
         console.log(Date.now() + ": " + message.author.username + " - " + message.content)
         const args = message.content.slice(config.prefix.length).split(/ +/g);
@@ -472,12 +478,12 @@ client.on("message", async message => {
 
         if(config.activityType[command]) {
             const m = await message.channel.send("Preparing...");
-            const nRaid = await createActivity(args.join(" ").split('|'), config.activityType[command].count, 
+            const nRaid = await createActivity(args.join(" ").split('|'), config.activityType[command].count,
                 config.activityType[command].name, message, m.id, m.channel.id);
             var activity_id = await getId();//await storage.length() + 1);
             message.delete().catch(O_o=>{});
             await writeRaid(activity_id, nRaid);
-            const sayMessage = await getMessage(activity_id, nRaid); 
+            const sayMessage = await getMessage(activity_id, nRaid);
             await m.edit(sayMessage);
             await reactRaid(m);
             return;
@@ -515,8 +521,8 @@ client.on("message", async message => {
             }
             return;
         }
-        if(command == "remind" || command == "message" || command == "message_all" || command == "message_reserve" 
-            || command == "message_reserves" || command == "message_main" || command == "message_mains" 
+        if(command == "remind" || command == "message" || command == "message_all" || command == "message_reserve"
+            || command == "message_reserves" || command == "message_main" || command == "message_mains"
             || command == "delete"){
             const args2 = args.join(" ").split('|');
 
@@ -579,13 +585,13 @@ client.on("message", async message => {
             var cl = args2.shift();
             if(cl){cl = cl.trim();}
             if(!cl){cl = 'Fill';}
-            
+
             var res = args2.shift();
             if(res){res=res.trim();}
             var user = args2.shift();
             if(user){user = user.trim();}
             if(!user){user = message.author.username;}
-            
+
             var sRaid = await getActivity(activity_id);
             if(!sRaid){
                 message.reply("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
@@ -593,6 +599,7 @@ client.on("message", async message => {
             };
             var addResponse = await addToRaid(activity_id, sRaid, user, cl, res, message);
             var raidMsg = await message.guild.channels.get(sRaid.channel_id).fetchMessage(sRaid.message_id);
+            sRaid.deletionTimer = setTimeout(function(){deleteRaidAndMessage(sRaid, raidMsg), Date(sRaid.time).getUnixTime() - Date.getTime()});
             updateRaidMessage(activity_id, sRaid, raidMsg);
             var rep = message.reply(addResponse)
                 .then(sent => setTimeout(function(){sent.delete()}, 7000))
@@ -692,14 +699,14 @@ client.on("message", async message => {
         }
     /**if(command === "purge") {
         // This command removes all messages from all users in the channel, up to 100.
-        
+
         // get the delete count, as an actual number.
         const deleteCount = parseInt(args[0], 10);
-        
+
         // Ooooh nice, combined conditions. <3
         if(!deleteCount || deleteCount < 2 || deleteCount > 100)
           return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
-        
+
         // So we get our messages, and delete them. Simple enough, right?
         const fetched = await message.channel.fetchMessages({limit: deleteCount});
         message.channel.bulkDelete(fetched)
@@ -727,13 +734,13 @@ client.on("message", async message => {
             var cl = args2.shift();
             if(cl){cl = cl.trim();}
             if(!cl){cl = 'Fill';}
-            
+
             var res = args2.shift();
             if(res){res=res.trim();}
             var user = args2.shift();
             if(user){user = user.trim();}
             if(!user){user = message.author.username;}
-            
+
             var sRaid = await getActivity(activity_id);
             if(!sRaid){
                 message.reply("Sorry, I couldn't find a raid with ID " + activity_id + ". Please try again and resubmit.");
@@ -828,14 +835,14 @@ client.on("message", async message => {
         }
         /**if(command === "purge") {
             // This command removes all messages from all users in the channel, up to 100.
-            
+
             // get the delete count, as an actual number.
             const deleteCount = parseInt(args[0], 10);
-            
+
             // Ooooh nice, combined conditions. <3
             if(!deleteCount || deleteCount < 2 || deleteCount > 100)
               return message.reply("Please provide a number between 2 and 100 for the number of messages to delete");
-            
+
             // So we get our messages, and delete them. Simple enough, right?
             const fetched = await message.channel.fetchMessages({limit: deleteCount});
             message.channel.bulkDelete(fetched)
