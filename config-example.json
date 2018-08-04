@@ -3,7 +3,6 @@
     "prefix": "!",
     "botname": "signup-bot-local",
     "signup_list": "signup-list",
-    "signup_here": "signup-here",
     "classes":{"Warlock": "469930718575722506",
         "Titan":"469930702272725007",
         "Hunter":"469930685600366622",
