@@ -22,7 +22,7 @@ async function createActivity(args2, playerCounts, activity, message, mID, mChID
         message.author.send("Sorry, I couldn't create this raid because you haven't specified a raid, time, or description. Please re-read the pinned syntax for creating raids and resbumit.")
         message.delete().catch(O_o=>{});
         return;
-    }
+    } 
         //.catch(error=>{message.author.send("Sorry,  I couldn't create that raid because you have not supplied a valid title. Please re-read the syntax for creation and re-submit."});
     const time = args2.shift();
     if(!time){
@@ -101,7 +101,7 @@ async function getMessage(activity_id, nRaid){
             + "\n**Posted by:** " + nRaid.author
             + "\n**Activity ID: **" + activity_id 
             + "\n" + nRaid.description
-            + "\n\nTo join this raid, react with the class icon you'd like to use below. For fill, use <:Fill:"+ config.classes["Fill"] + ">."
+            + "\n\nTo join this activity, react with the class icon you'd like to use below. For fill, use <:Fill:"+ config.classes["Fill"] + ">."
             + "If you're not sure you can make it, press 🔃 after joining to go on the tentative list (or promote yourself back when you're sure). To leave this raid, press 🚪."
             + "```" + await getFormattedList(activity_id, nRaid) + "```";
 }
