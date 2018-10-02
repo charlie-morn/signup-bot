@@ -427,7 +427,7 @@ client.on('raw', async event => {
 
 client.on('messageReactionAdd', async (reaction, user) => {
     if(user.bot) return;
-    if(reaction.message.channel.name != config.signup_list) return;
+    if(config.signup_list.indexOf(reaction.message.channel.name)<0) return;
     var activity_id = await getActivityIDFromMessageID(reaction.message.id);
     console.log(Date.now() + ": " + user.username + " - " + reaction.emoji.name + " on " + activity_id)
     var sRaid = await getActivity(activity_id)
@@ -465,7 +465,7 @@ client.on("message", async message => {
   // Also good practice to ignore any message that does not start with our prefix, 
   // which is set in the configuration file.
   
-    if(message.channel.name == config.signup_list){
+    if(config.signup_list.indexOf(message.channel.name) >= 0){
         console.log(Date.now() + ": " + message.author.username + " - " + message.content)
         const args = message.content.slice(config.prefix.length).split(/ +/g);
         const command = args.shift().toLowerCase();
