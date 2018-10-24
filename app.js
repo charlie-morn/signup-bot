@@ -508,6 +508,7 @@ client.on("message", async message => {
             var sRaid = await getActivity(activity_id);
             await audit(activity_id, message, sRaid);
             message.delete().catch(O_o=>{});
+            return;
         }
         if(command == "time"){
             const args2 = args.join(" ").split('|');
