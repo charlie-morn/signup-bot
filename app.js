@@ -292,6 +292,7 @@ async function audit(id, message, sRaid){
         }
         message.author.send(retstr)
     }
+    return "";
 }
 async function modifyRaidTime(activity_id, sRaid, newTime, message){
     if(ownsRaid(message.author, sRaid)){
