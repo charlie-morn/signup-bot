@@ -272,10 +272,28 @@ async function messageRaiders(sRaid, message, text, group, endWithUser){
     }
 }
 function ownsRaid(sender, sRaid){
-    return (sRaid.author_id == sender);
+    return (sRaid.author_id == sender.id ||
+    sender.roles.some(r=>["Admin", "admin", "Clan Leader", "Atheon, Bot's Conflux"].includes(r.name)) );
+}
+async function audit(id, message, sRaid){
+    if(ownsRaid(message.author, sRaid)){
+        var retstr = "";
+        var findInFiles = require('find-in-files');
+        results = await findInFiles.find("on " + id, '.', 'out_prod.log')
+            for (var result in results) {
+                var res = results[result];
+                for (var lin in res.line){
+                    var tim = parseInt(res.line[lin].substring(0, res.line[lin].search(":")))
+                    var d = new Date(0)
+                    d.setUTCMilliseconds(tim)
+                    retstr = retstr + (d + res.line[lin].substring(res.line[lin].search(":"))) + '\n'
+            }
+        }
+        message.author.send(retstr)
+    }
 }
 async function modifyRaidTime(activity_id, sRaid, newTime, message){
-    if(ownsRaid(message.author.id, sRaid)){
+    if(ownsRaid(message.author, sRaid)){
         const oldTime = sRaid.time;
         sRaid.time = newTime;
         await writeRaid(activity_id, sRaid);
@@ -291,7 +309,7 @@ async function ownsUser(arr, index, message, author){
         message.author.username==arr[index].name || 
         message.author.username==arr[index].adding_user || 
         message.author.username == author ||
-        message.member.roles.some(r=>["Admin", "admin", "Clan Leader", "Skynet"].includes(r.name)) 
+        message.member.roles.some(r=>["Admin", "admin", "Clan Leader", "Atheon, Bot's Conflux"].includes(r.name)) 
     );
 }
 async function swapRoles(activity_id, sRaid, user, message){
@@ -481,6 +499,14 @@ client.on("message", async message => {
             await m.edit(sayMessage);
             await reactRaid(m);
             return;
+        }
+        if(command == "audit"){
+            const args2 = args.join(" ").split('|');
+
+            var activity_id = args2.shift();
+            var sRaid = await getActivity(activity_id);
+            await audit(activity_id, message, sRaid);
+            message.delete().catch(O_o=>{});
         }
         if(command == "time"){
             const args2 = args.join(" ").split('|');
