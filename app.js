@@ -271,12 +271,12 @@ async function messageRaiders(sRaid, message, text, group, endWithUser){
         }
     }
 }
-function ownsRaid(sender, sRaid){
-    return (sRaid.author_id == sender.id ||
-    sender.roles.some(r=>["Admin", "admin", "Clan Leader", "Atheon, Bot's Conflux"].includes(r.name)) );
+function ownsRaid(message, sRaid){
+    return (message.member.roles.some(r=>["Admin", "admin", "Clan Leader", "Atheon, Bot's Conflux"].includes(r.name)) ||
+    sRaid.author_id == message.author.id);
 }
 async function audit(id, message, sRaid){
-    if(ownsRaid(message.author, sRaid)){
+    if(ownsRaid(message, sRaid)){
         var retstr = "Audit for activity " + id + " follows:";
         var findInFiles = require('find-in-files');
         results = await findInFiles.find({'term': 'on ' + id + '$', 'flags': 'igm'}, '.', 'out_prod.log')
@@ -295,7 +295,7 @@ async function audit(id, message, sRaid){
     return "";
 }
 async function modifyRaidTime(activity_id, sRaid, newTime, message){
-    if(ownsRaid(message.author, sRaid)){
+    if(ownsRaid(message, sRaid)){
         const oldTime = sRaid.time;
         sRaid.time = newTime;
         await writeRaid(activity_id, sRaid);
