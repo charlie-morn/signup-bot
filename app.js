@@ -277,16 +277,17 @@ function ownsRaid(sender, sRaid){
 }
 async function audit(id, message, sRaid){
     if(ownsRaid(message.author, sRaid)){
-        var retstr = "Audit for activity " + id + " follows: \n";
+        var retstr = "Audit for activity " + id + " follows:";
         var findInFiles = require('find-in-files');
-        results = await findInFiles.find("on " + id + "$", '.', 'out_prod.log')
+        results = await findInFiles.find({'term': 'on ' + id + '$', 'flags': 'igm'}, '.', 'out_prod.log')
             for (var result in results) {
                 var res = results[result];
                 for (var lin in res.line){
                     var tim = parseInt(res.line[lin].substring(0, res.line[lin].search(":")))
                     var d = new Date(0)
                     d.setUTCMilliseconds(tim)
-                    retstr = retstr + (d + res.line[lin].substring(res.line[lin].search(":"))) + '\n'
+                    var a = '\n' + (d.toUTCString()) + res.line[lin].substring(res.line[lin].search(":"))
+                    retstr = retstr + a
             }
         }
         message.author.send(retstr)
@@ -447,7 +448,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if(user.bot) return;
     if(config.signup_list.indexOf(reaction.message.channel.name)<0) return;
     var activity_id = await getActivityIDFromMessageID(reaction.message.id);
-    console.log(Date.now() + ": " + user.username + " - " + reaction.emoji.name + " on " + activity_id)
+    await console.log(Date.now() + ": " + user.username + " - " + reaction.emoji.name + " on " + activity_id)
     var sRaid = await getActivity(activity_id)
     var response = "";
     if (findIndexOfUser(sRaid.main, user.username)==-1 
