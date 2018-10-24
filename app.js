@@ -277,9 +277,9 @@ function ownsRaid(sender, sRaid){
 }
 async function audit(id, message, sRaid){
     if(ownsRaid(message.author, sRaid)){
-        var retstr = "";
+        var retstr = "Audit for activity " + id + " follows: \n";
         var findInFiles = require('find-in-files');
-        results = await findInFiles.find("on " + id, '.', 'out_prod.log')
+        results = await findInFiles.find("on " + id + "$", '.', 'out_prod.log')
             for (var result in results) {
                 var res = results[result];
                 for (var lin in res.line){
