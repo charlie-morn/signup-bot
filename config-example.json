@@ -16,5 +16,11 @@
         "weekly": {"name": "PvP: Weekly Playlist", "count": "6"},
         "quickplay": {"name": "PvP: Quickplay", "count": "6"},
         "pve": {"name": "3 person PvE", "count": "3"}
-    }
+    },
+    "role_channel":"role-assignment",
+    "roles":[
+        {"emoji":"sherpee","id": "512493944463032340", "role": "Sherpee", "description": "If you're new to the raids and want some guidance, Sherpee will allow sherpas to ping you for learning raids they are creating."},
+        {"emoji": "crucible", "id": "512490882063138816", "role": "War Beast", "description": "War Beast is our PvP entry role. If you like pub stomping in 6-stacks, playing Iron Banner, or anything else in crucible and want to know when people are hanging out, grab this role."},
+        {"emoji": "gambit", "id": "512492913943511040", "role": "Gambit Ape", "description": "Alright Alright Alright. Gambit Ape is our Gambit role. If you love banking motes and getting mapped by Queenbreaker, this is the role for you."},
+        {"emoji": "🌭", "id": "🌭", "role": "Hot Dog", "description": "Hot Dogs is a role for people who feel like getting real sweaty. A good few people in this clan have been doing pick up sweat games using DTR rules lately; if you're interested in that sort of thing, the Hot Dogs role will let you get pinged for it."}]
  }

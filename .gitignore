@@ -1,5 +1,7 @@
 # Private files
 config.json
+config-roles.json
+config.1.json
 raid_store/
 message_raid_map/
 images/
